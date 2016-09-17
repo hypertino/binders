@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/hypertino/binders.svg)](https://travis-ci.org/hypertino/binders)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.hypertino/binders/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.hypertino/binders)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.hypertino/binders_2.11/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.hypertino/binders_2.11)
 
 # About
 
