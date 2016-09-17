@@ -1,16 +1,17 @@
 package com.hypertino.binders
 
-import com.hypertino.binders.value.internal.DynamicMacro
+import com.hypertino.binders.value.internal.ValueCastMacro
 
 import scala.language.experimental.macros
+import scala.language.implicitConversions
 
 package object value {
   implicit class ValueReader(val value: Value) {
-    def fromValue[O]: O = macro DynamicMacro.fromValue[O]
+    def to[O]: O = macro ValueCastMacro.to[O]
   }
 
   implicit class ValueGenerator[O](val obj: O) {
-    def toValue: Value = macro DynamicMacro.toValue[O]
+    def toValue: Value = macro ValueCastMacro.toValue[O]
   }
 
   implicit def int2number(i: Int): Number = Number(i)

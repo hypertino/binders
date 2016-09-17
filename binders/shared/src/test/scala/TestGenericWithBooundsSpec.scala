@@ -1,34 +1,29 @@
-import java.util._
-
 import com.hypertino.inflector.naming.PlainConverter
-import org.scalatest.mock.MockitoSugar.mock
+import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
-import org.mockito.Mockito._
 
 class TestGenericSuper(x: String) extends TestGeneric
 
-class TestGenericWithBooundsSpec extends FlatSpec with Matchers {
+class TestGenericWithBooundsSpec extends FlatSpec with Matchers with MockFactory {
   "Generic with bounds " should " bind refined type" in {
     val m = mock[TestSerializerWithGenerics[PlainConverter.type]]
     val g = new TestGeneric {}
+    m.writeGenericWithBounds _ expects g
     m.bind(g)
-    verify(m).writeGenericWithBounds(g)
-    verifyNoMoreInteractions(m)
   }
 
   "Generic with bounds " should " bind" in {
     val m = mock[TestSerializerWithGenerics[PlainConverter.type]]
     val g = new TestGenericSuper("1")
+    m.writeGenericWithBounds _ expects g
     m.bind(g)
-    verify(m).writeGenericWithBounds(g)
-    verifyNoMoreInteractions(m)
   }
 
   "Generic with bounds " should " unbind" in {
     val m = mock[TestDeserializerWithGenerics[PlainConverter.type]]
     val r = new TestGeneric{}
-    when (m.readGenericWihBounds).thenReturn(r)
+    m.readGenericWihBounds[TestGeneric] _ expects () returning r
     val g = m.unbind[TestGeneric]
-    assert (g == r)
+    g shouldBe r
   }
 }

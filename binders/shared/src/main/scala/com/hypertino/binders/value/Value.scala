@@ -1,28 +1,29 @@
 package com.hypertino.binders.value
 
-import java.util.Date
-
 import scala.language.dynamics
 import scala.language.experimental.macros
 
 sealed trait Value extends Any with Dynamic {
   def ~~[T](visitor: ValueVisitor[T]): T
 
-  def asString: String = this ~~ Visitors.asStringVisitor
+  override def toString: String = this ~~ Visitors.toStringVisitor
 
-  def asBoolean: Boolean = this ~~ Visitors.asBooleanVisitor
+  def toBoolean: Boolean = this ~~ Visitors.toBooleanVisitor
 
-  def asBigDecimal: BigDecimal = this ~~ Visitors.asBigDecimalVisitor
+  def toBigDecimal: BigDecimal = this ~~ Visitors.toBigDecimalVisitor
 
-  def asInt: Int = asBigDecimal.toIntExact
-  def asLong: Long = asBigDecimal.toLongExact
-  def asDouble: Double = asBigDecimal.toDouble
-  def asFloat: Float = asBigDecimal.toFloat
-  def asDate: Date = new Date(asLong)
+  def toInt: Int = toBigDecimal.toIntExact
+  def toLong: Long = toBigDecimal.toLongExact
+  def toDouble: Double = toBigDecimal.toDouble
+  def toFloat: Float = toBigDecimal.toFloat
 
-  def asMap: scala.collection.Map[String, Value] = this ~~ Visitors.asMapVisitor
+  def toMap: scala.collection.Map[String, Value] = this ~~ Visitors.toMapVisitor
 
-  def asSeq: Seq[Value] = this ~~ Visitors.asSeqVisitor
+  def toSeq: Seq[Value] = this ~~ Visitors.toSeqVisitor
+
+  def toList: List[Value] = toSeq.toList
+
+  def toVector: Vector[Value] = toSeq.toVector
 
   def isDefined: Boolean = !isNull
 
@@ -49,7 +50,7 @@ sealed trait Value extends Any with Dynamic {
   def unary_- : Value = throw new UnsupportedOperationException(s"-$this")
 
   def selectDynamic(name: String): Value = {
-    asMap.getOrElse(
+    toMap.getOrElse(
       if (name.startsWith("_") && name.length > 1) {
         name.substring(1)
       } else {
@@ -90,62 +91,62 @@ case class Number(v: BigDecimal) extends AnyVal with Value {
   override def ~~[T](visitor: ValueVisitor[T]): T = visitor.visitNumber(this)
 
   override def +(other: Value): Value = if (other != Null)
-    v + other.asBigDecimal
+    v + other.toBigDecimal
   else
     Null
 
   override def -(other: Value): Value = if (other != Null)
-    v - other.asBigDecimal
+    v - other.toBigDecimal
   else
     Null
 
   override def *(other: Value): Value = if (other != Null)
-    v * other.asBigDecimal
+    v * other.toBigDecimal
   else
     Null
 
   override def /(other: Value): Value = if (other != Null)
-    v / other.asBigDecimal
+    v / other.toBigDecimal
   else
     Null
 
   override def %(other: Value): Value = if (other != Null)
-    v % other.asBigDecimal
+    v % other.toBigDecimal
   else
     Null
 
   override def |(other: Value): Value = if (other != Null)
-    BigDecimal(v.toBigInt() | other.asBigDecimal.toBigInt())
+    BigDecimal(v.toBigInt() | other.toBigDecimal.toBigInt())
   else
     Null
 
   override def &(other: Value): Value = if (other != Null)
-    BigDecimal(v.toBigInt() & other.asBigDecimal.toBigInt())
+    BigDecimal(v.toBigInt() & other.toBigDecimal.toBigInt())
   else
     Null
 
   override def ^(other: Value): Value = if (other != Null)
-    BigDecimal(v.toBigInt() ^ other.asBigDecimal.toBigInt())
+    BigDecimal(v.toBigInt() ^ other.toBigDecimal.toBigInt())
   else
     Null
 
   override def >(other: Value): Boolean = if (other != Null)
-    v > other.asBigDecimal
+    v > other.toBigDecimal
   else
     false
 
   override def <(other: Value): Boolean = if (other != Null)
-    v < other.asBigDecimal
+    v < other.toBigDecimal
   else
     false
 
   override def >=(other: Value): Boolean = if (other != Null)
-    v >= other.asBigDecimal
+    v >= other.toBigDecimal
   else
     false
 
   override def <=(other: Value): Boolean = if (other != Null)
-    v <= other.asBigDecimal
+    v <= other.toBigDecimal
   else
     false
 
@@ -155,12 +156,12 @@ case class Number(v: BigDecimal) extends AnyVal with Value {
 
 case class Text(v: String) extends AnyVal with Value {
   override def ~~[T](visitor: ValueVisitor[T]): T = visitor.visitText(this)
-  override def +(other: Value): Value = v + other.asString
-  override def >(other: Value): Boolean = v > other.asString
-  override def <(other: Value): Boolean = v < other.asString
-  override def >=(other: Value): Boolean = v >= other.asString
-  override def <=(other: Value): Boolean = v <= other.asString
-  override def contains(other: Value): Boolean = v.contains(other.asString)
+  override def +(other: Value): Value = v + other.toString
+  override def >(other: Value): Boolean = v > other.toString
+  override def <(other: Value): Boolean = v < other.toString
+  override def >=(other: Value): Boolean = v >= other.toString
+  override def <=(other: Value): Boolean = v <= other.toString
+  override def contains(other: Value): Boolean = v.contains(other.toString)
 }
 
 case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value{
@@ -187,10 +188,10 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
   }
 
   override def -(other: Value): Value = {
-    Obj(v.filterNot(kv ⇒ other.asMap.contains(kv._1)))
+    Obj(v.filterNot(kv ⇒ other.toMap.contains(kv._1)))
   }
 
-  override def contains(other: Value): Boolean = v.contains(other.asString)
+  override def contains(other: Value): Boolean = v.contains(other.toString)
 }
 
 object Obj {
@@ -252,13 +253,13 @@ trait Bool extends Value with Product {
   val v: Boolean
   override def ~~[T](visitor: ValueVisitor[T]): T = visitor.visitBool(this)
 
-  override def |(other: Value): Value = v || other.asBoolean
-  override def &(other: Value): Value = v && other.asBoolean
-  override def ^(other: Value): Value = v ^ other.asBoolean
-  override def >(other: Value): Boolean = v > other.asBoolean
-  override def <(other: Value): Boolean = v < other.asBoolean
-  override def >=(other: Value): Boolean = v >= other.asBoolean
-  override def <=(other: Value): Boolean = v <= other.asBoolean
+  override def |(other: Value): Value = v || other.toBoolean
+  override def &(other: Value): Value = v && other.toBoolean
+  override def ^(other: Value): Value = v ^ other.toBoolean
+  override def >(other: Value): Boolean = v > other.toBoolean
+  override def <(other: Value): Boolean = v < other.toBoolean
+  override def >=(other: Value): Boolean = v >= other.toBoolean
+  override def <=(other: Value): Boolean = v <= other.toBoolean
   override def unary_! : Value = !v
 
   // product methods
@@ -291,7 +292,7 @@ case object False extends Bool {
 }
 
 private [value] object Visitors {
-  val asStringVisitor = new ValueVisitor[String] {
+  val toStringVisitor = new ValueVisitor[String] {
     override def visitBool(d: Bool) = d.v.toString
     override def visitText(d: Text) = d.v
     override def visitObj(d: Obj) = d.v.map(kv => kv._1 + "->" + kv._2).mkString(",")
@@ -300,7 +301,7 @@ private [value] object Visitors {
     override def visitNull(): String = ""
   }
 
-  val asBooleanVisitor = new ValueVisitor[Boolean] {
+  val toBooleanVisitor = new ValueVisitor[Boolean] {
     override def visitBool(d: Bool) = d.v
     override def visitText(d: Text) = d.v.toLowerCase match {
       case "true" => true
@@ -321,7 +322,7 @@ private [value] object Visitors {
     override def visitNull(): Boolean = false
   }
 
-  val asBigDecimalVisitor = new ValueVisitor[BigDecimal] {
+  val toBigDecimalVisitor = new ValueVisitor[BigDecimal] {
     override def visitBool(d: Bool) = if(d.v) 1 else 0
     override def visitText(d: Text) = BigDecimal(d.v)
     override def visitObj(d: Obj) = castUnavailable("Obj to BigDecimal")
@@ -330,7 +331,7 @@ private [value] object Visitors {
     override def visitNull(): BigDecimal = 0
   }
 
-  val asMapVisitor = new ValueVisitor[scala.collection.Map[String, Value]] {
+  val toMapVisitor = new ValueVisitor[scala.collection.Map[String, Value]] {
     override def visitBool(d: Bool) = castUnavailable("Bool to Map[]")
     override def visitText(d: Text) = castUnavailable("Text to Map[]")
     override def visitObj(d: Obj) = d.v
@@ -339,7 +340,7 @@ private [value] object Visitors {
     override def visitNull() = Map.empty
   }
 
-  val asSeqVisitor = new ValueVisitor[Seq[Value]] {
+  val toSeqVisitor = new ValueVisitor[Seq[Value]] {
     override def visitBool(d: Bool) = castUnavailable("Bool to Seq[]")
     override def visitText(d: Text) = castUnavailable("Text to Seq[]")
     override def visitObj(d: Obj) = castUnavailable("Obj to Seq[]")

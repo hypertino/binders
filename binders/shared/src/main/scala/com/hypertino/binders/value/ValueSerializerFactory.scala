@@ -12,7 +12,7 @@ trait ValueSerializerFactory[C <: Converter, S <: ValueSerializerBase[C,_], D <:
   def withSerializer(codeBlock: S ⇒ Unit): Value = {
     val serializer = createSerializer()
     codeBlock(serializer)
-    serializer.asValue
+    serializer.result
   }
 
   def createSerializer(): S

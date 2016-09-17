@@ -1,5 +1,3 @@
-import java.util.Date
-
 import com.hypertino.binders.core.{Deserializer, Serializer}
 import com.hypertino.binders.value.Value
 import com.hypertino.inflector.naming.Converter
@@ -13,17 +11,17 @@ trait TestDeserializer[C <: Converter] extends Deserializer[C] {
 
   def readIntNullable(): Option[Int]
 
-  def readDate(): Date
-
-  def readDateNullable(): Option[Date]
-
   def readLong(): Long
+
+  //def readLongNullable(): Option[Long]
 
   def readString(): String
 
+  def readStringNullable(): Option[String]
+
   def isNull: Boolean
 
-  def readDynamic(): Value
+  def readValue(): Value
 
   def iterator(): Iterator[TestDeserializer[C]]
 }
@@ -33,19 +31,17 @@ trait TestDeserializerWithGenerics[C <: Converter] extends Deserializer[C] {
 
   def readIntNullable(): Option[Int]
 
-  def readDate(): Date
-
-  def readDateNullable(): Option[Date]
-
   def readLong(): Long
 
   def readString(): String
+
+  def readStringNullable(): Option[String]
 
   def readMap[K, V](): Map[K, V]
 
   def isNull: Boolean
 
-  def readDynamic(): Value
+  def readValue(): Value
 
   def readGenericWihBounds[T <: TestGeneric](): T
 
@@ -58,18 +54,16 @@ trait TestDeserializerWithList[C <: Converter] extends Deserializer[C] {
   def iterator(): Iterator[TestDeserializer[C]]
 }
 
-abstract class TestSerializer[C <: Converter](c: Converter) extends Serializer[C] {
+trait TestSerializer[C <: Converter] extends Serializer[C] {
   def writeInt(value: Int)
 
   def writeIntNullable(value: Option[Int])
 
-  def writeDate(value: Date)
-
-  def writeDateNullable(value: Option[Date])
-
   def writeLong(value: Long)
 
   def writeString(value: String)
+
+  def writeStringNullable(value: Option[String])
 
   def writeNull()
 
@@ -89,10 +83,6 @@ trait TestSerializerWithGenerics[C <: Converter] extends Serializer[C] {
 
   def writeIntNullable(value: Option[Int])
 
-  def writeDate(value: Date)
-
-  def writeDateNullable(value: Option[Date])
-
   def writeSeq[T: ClassTag](value: Seq[T])
 
   def writeMap[K, V](value: Map[K, V])
@@ -102,6 +92,8 @@ trait TestSerializerWithGenerics[C <: Converter] extends Serializer[C] {
   def writeLong(value: Long)
 
   def writeString(value: String)
+
+  def writeStringNullable(value: Option[String])
 
   def writeGenericWithBounds[T <: TestGeneric](value: T)
 

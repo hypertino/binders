@@ -10,17 +10,17 @@ import scala.language.experimental.macros
 class ValueSerializeException(message: String) extends RuntimeException(message)
 
 trait ValueSerializerBaseTrait[C <: Converter] extends Serializer[C] {
-  def asValue: Value
+  def result: Value
 }
 
-class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait[C]] extends ValueSerializerBaseTrait[C]{
-  protected var value: Value = null
-  protected var map: scala.collection.mutable.Map[String, ValueSerializerBaseTrait[C]] = null
-  protected var seq: scala.collection.mutable.ArrayBuffer[Value] = null
+abstract class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait[C]] extends ValueSerializerBaseTrait[C]{
+  protected var value: Value = _
+  protected var map: scala.collection.mutable.Map[String, ValueSerializerBaseTrait[C]] = _
+  protected var seq: scala.collection.mutable.ArrayBuffer[Value] = _
 
   def getFieldSerializer(fieldName: String): Option[F] = {
     if (map == null) {
-      throw new ValueSerializeException("Can't get field serializer for nonmap: "+ fieldName)
+      throw new ValueSerializeException("Can't get field serializer for non-map field: "+ fieldName)
     }
 
     val f = createFieldSerializer()
@@ -28,20 +28,20 @@ class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait[C]] exte
     Some(f)
   }
 
-  protected def createFieldSerializer(): F = ???
+  protected def createFieldSerializer(): F
 
-  def writeNull() = writeDynamicObject(Null)
+  def writeNull() = writeValue(Null)
 
-  def writeString(value: String) = if(value == null) writeNull() else writeDynamicObject(Text(value))
-  def writeBoolean(value: Boolean) = writeDynamicObject(Bool(value))
-  def writeBigDecimal(value: BigDecimal) = if(value == null) writeNull() else writeDynamicObject(Number(value))
-  def writeInt(value: Int) = writeDynamicObject(Number(value))
-  def writeLong(value: Long) = writeDynamicObject(Number(value))
-  def writeFloat(value: Float) = writeDynamicObject(Number(BigDecimal(value)))
-  def writeDouble(value: Double) = writeDynamicObject(Number(value))
-  def writeDate(value: Date) = if(value == null) writeNull() else writeDynamicObject(Number(value.getTime))
+  def writeString(value: String) = if(value == null) writeNull() else writeValue(Text(value))
+  def writeBoolean(value: Boolean) = writeValue(Bool(value))
+  def writeBigDecimal(value: BigDecimal) = if(value == null) writeNull() else writeValue(Number(value))
+  def writeInt(value: Int) = writeValue(Number(value))
+  def writeLong(value: Long) = writeValue(Number(value))
+  def writeFloat(value: Float) = writeValue(Number(BigDecimal(value)))
+  def writeDouble(value: Double) = writeValue(Number(value))
+  def writeDate(value: Date) = if(value == null) writeNull() else writeValue(Number(value.getTime))
 
-  def writeDynamicObject(value: Value): Unit = {
+  def writeValue(value: Value): Unit = {
     if (seq != null)
       seq += value
     else
@@ -53,7 +53,7 @@ class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait[C]] exte
   }
 
   def endObject(): Unit = {
-    value = Obj(map.toMap.map(kv => (kv._1, kv._2.asValue)))
+    value = Obj(map.toMap.map(kv => (kv._1, kv._2.result)))
     map = null
   }
 
@@ -66,7 +66,7 @@ class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait[C]] exte
     seq = null
   }
 
-  def asValue: Value = value
+  def result: Value = value
 }
 
 class ValueSerializer[C <: Converter] extends ValueSerializerBase[C, ValueSerializer[C]]{

@@ -3,43 +3,48 @@
 import com.hypertino.binders.value._
 import org.scalatest._
 
-case class TestDynamic(a:Int,b:String,c:Boolean)
+case class TestValue(a:Int, b:String, c:Boolean)
 
-class TestDynamicSpec extends FlatSpec with Matchers {
+object DefineType2 {
+  type CoolMap = Map[Long,String]
+  type StringMap = Map[String,String]
+}
+
+class TestValueSpec extends FlatSpec with Matchers {
 
   "toValue " should " serialize int " in {
     val i1 = 123456
     val d1 = i1.toValue
-    assert (d1.asInt == 123456)
+    assert (d1.toInt == 123456)
   }
 
-  "fromValue " should " deserialize int " in {
+  "to[Int] " should " deserialize int " in {
     val d1 = Number(123456)
-    val i1 = d1.fromValue[Int]
+    val i1 = d1.to[Int]
     assert (i1 == 123456)
   }
 
   "toValue " should " serialize long " in {
     val i1 = 123456l
     val d1 = i1.toValue
-    assert (d1.asLong == 123456l)
+    assert (d1.toLong == 123456l)
   }
 
-  "fromValue " should " deserialize long " in {
+  "to[Long] " should " deserialize long " in {
     val d1 = Number(Long.MaxValue)
-    val i1 = d1.fromValue[Long]
+    val i1 = d1.to[Long]
     assert (i1 == Long.MaxValue)
   }
 
   "toValue " should " serialize string " in {
     val i1 = "yey"
     val d1 = i1.toValue
-    assert (d1.asString == "yey")
+    assert (d1.toString == "yey")
   }
 
-  "fromValue " should " deserialize string " in {
+  "to[String] " should " deserialize string " in {
     val d1 = Text("ho")
-    val i1 = d1.fromValue[String]
+    val i1 = d1.to[String]
     assert (i1 == "ho")
   }
 
@@ -49,52 +54,58 @@ class TestDynamicSpec extends FlatSpec with Matchers {
     assert (d1 == Null)
   }
 
-  "fromValue " should " deserialize null " in {
+  "to[Option[String]] " should " deserialize null " in {
     val d1 = Null
-    val i1 = d1.fromValue[Option[String]]
+    val i1 = d1.to[Option[String]]
     assert (i1.isEmpty)
   }
 
   "toValue " should " serialize Seq[Int] " in {
     val i1 = Seq(1,2,3)
     val d1 = i1.toValue
-    d1.asSeq should equal (Seq(1,2,3).map(Number(_)))
+    d1.toSeq should equal (Seq(1,2,3).map(Number(_)))
   }
 
-  "fromValue " should " deserialize Seq[Int] " in {
+  "to[Seq[Int]] " should " deserialize Seq[Int] " in {
     val d1 = Lst(Seq(Number(1),Text("2"),Number(3)))
-    val i1 = d1.fromValue[Seq[Int]]
+    val i1 = d1.to[Seq[Int]]
     i1 should equal (Seq(1,2,3))
+  }
+
+  "to[Seq[Value]] " should " deserialize Seq[Value] " in {
+    val d1 = Lst(Seq(Number(1),Text("2"),Number(3)))
+    val i1 = d1.to[Seq[Value]]
+    i1 shouldBe Seq[Value](1,"2",3)
   }
 
   "toValue " should " serialize Map[String,Int] " in {
     val i1: Map[String,Int] = Map("a" -> 1, "b" -> 2, "c" -> 3)
     val d1 = i1.toValue
-    d1.asMap should equal (i1 map toDynamicNumber)
+    d1.toMap should equal (i1 map toValueNumberPair)
   }
 
-  "fromValue " should " deserialize Map[String,Int] " in {
+  "to[Map[String,Int]] " should " deserialize Map[String,Int] " in {
     val m = Map("a" -> 1, "b" -> 2, "c" -> 3)
-    val d1 = Obj(m map toDynamicNumber)
-    val i1 = d1.fromValue[Map[String,Int]]
+    val d1 = Obj(m map toValueNumberPair)
+    val i1 = d1.to[Map[String,Int]]
     i1 should equal (m)
   }
 
   "toValue " should " serialize Obj " in {
-    val i1 = TestDynamic(1,"ho",true)
+    val i1 = TestValue(1,"ho",true)
     val d1 = i1.toValue
-    d1.asMap should equal (Map("a" -> Number(1), "b" -> Text("ho"), "c" -> Bool(true)))
+    d1.toMap should equal (Map("a" -> Number(1), "b" -> Text("ho"), "c" -> Bool(true)))
   }
 
-  "fromValue " should " deserialize StringMap = Map[String,String] " in {
-    import DefineType._
+  "valueAs " should " deserialize StringMap = Map[String,String] " in {
+    import DefineType2._
 
     val m = ObjV("a" -> "he", "b" -> "ho")
-    val map = m.fromValue[StringMap]
+    val map = m.to[StringMap]
     map should equal(Map("a"->"he", "b"->"ho"))
   }
 
-  "DynamicValue " should " allow selectDynamic " in {
+  "Value " should " allow selectDynamic " in {
     val d = ObjV("a" -> 1, "b" -> "ho", "c" -> true, "_" -> false,
       "inner" → ObjV("x" → "100500")
     )
@@ -260,7 +271,8 @@ class TestDynamicSpec extends FlatSpec with Matchers {
     False | 1 shouldBe True
   }
 
-  def toDynamicNumber(kv: (String, Int)) = {
+
+  def toValueNumberPair(kv: (String, Int)) = {
     (kv._1, Number(kv._2))
   }
 }

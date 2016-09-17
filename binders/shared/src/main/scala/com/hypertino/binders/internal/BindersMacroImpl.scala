@@ -10,7 +10,7 @@ import scala.language.reflectiveCalls
 import scala.reflect.macros.Context
 import scala.util.control.NonFatal
 
-private [binders] trait BinderImplementation {
+private [binders] trait BindersMacroImpl {
   val c: Context
 
   import c.universe._
@@ -22,7 +22,6 @@ private [binders] trait BinderImplementation {
     val block =
     if (!customSerializer.isEmpty) {
       //c.universe.build.freshTypeName()
-
       //val ident =
       q"""{
         val $serOps = ${c.prefix.tree}
@@ -189,9 +188,8 @@ private [binders] trait BinderImplementation {
       else {
         val tpe = weakTypeOf[O]
         val readers = extractReaders[D]
-        //println ("readers: " + readers)
+
         val reader = findReader(readers, tpe)
-        //println("reader: " + reader)
         reader.map { readerMethod =>
           q"""{
             val $dserOps = ${c.prefix.tree}
@@ -220,7 +218,7 @@ private [binders] trait BinderImplementation {
           }
         }
       }
-
+    //println(block)
     block
   }
 
@@ -253,8 +251,8 @@ private [binders] trait BinderImplementation {
     val left = extractTypeArgs(tpe).head
     val right = extractTypeArgs(tpe).tail.head
 
-    val leftDStr = getTypeDynamicString(left.tpe)
-    val rightDStr = getTypeDynamicString(right.tpe)
+    val leftDStr = getTypeValueString(left.tpe)
+    val rightDStr = getTypeValueString(right.tpe)
 
     val block = q"""{
       val $dserOps = ${c.prefix.tree}
@@ -264,11 +262,11 @@ private [binders] trait BinderImplementation {
       val $leftIsBetter = com.hypertino.binders.internal.Helpers.getConformity($leftDStr,$v) >=
         com.hypertino.binders.internal.Helpers.getConformity($rightDStr,$v)
 
-      val $r = Try (if ($leftIsBetter) Left($v.fromValue[$left]) else Right($v.fromValue[$right]))
+      val $r = Try (if ($leftIsBetter) Left($v.to[$left]) else Right($v.to[$right]))
         match {
           case Success($r1) => $r1
           case Failure($e1) =>
-            Try (if ($leftIsBetter) Right($v.fromValue[$right]) else Left($v.fromValue[$left]))
+            Try (if ($leftIsBetter) Right($v.to[$right]) else Left($v.to[$left]))
             match {
               case Success($r2) => $r2
               case Failure($e2) =>
@@ -281,7 +279,7 @@ private [binders] trait BinderImplementation {
     block
   }
 
-  def getTypeDynamicString(ct: Type) = {
+  def getTypeValueString(ct: Type) = {
     val t = if (ct <:< typeOf[Option[_]]) extractTypeArgs(ct).head.tpe else ct
 
     if (t =:= typeOf[Double]
@@ -311,11 +309,12 @@ private [binders] trait BinderImplementation {
     val dserOps = fresh("dserOps")
     val tpe = weakTypeOf[O]
     val elTpe = extractTypeArgs(tpe).head
-
-    q"""{
+    val q = q"""{
       val $dserOps = ${c.prefix.tree}
       ${convertIterator(tpe, q"$dserOps.deserializer.iterator().map(_.unbind[$elTpe])")}
     }"""
+    //println(q)
+    q
   }
 
   def unbindObject[D: c.WeakTypeTag, O: c.WeakTypeTag](partial: Boolean, originalValue: c.Tree): c.Tree = {
@@ -348,6 +347,7 @@ private [binders] trait BinderImplementation {
           }"""
         },
 
+        // todo: do something with this! canBuildFrom + something 11
         // _3
         if (parameter.asTerm.isParamWithDefault) {
           val defVal = newTermName("apply$default$" + (index + 1))
@@ -370,6 +370,8 @@ private [binders] trait BinderImplementation {
           q"$parameter = $varName.getOrElse(Seq.empty)"
         else if (parameter.typeSignature <:< typeOf[Array[_]])
           q"$parameter = $varName.getOrElse(Array())"
+        else if (parameter.typeSignature <:< typeOf[TraversableOnce[_]])
+          q"$parameter = $varName.getOrElse(${emptyTraversable(parameter.typeSignature)})"
         else
           q"$parameter = $varName.getOrElse(throw new com.hypertino.binders.core.FieldNotFoundException($fieldName))"
       )
@@ -411,36 +413,14 @@ private [binders] trait BinderImplementation {
     block
   }
 
+  protected def emptyTraversable(ct: Type): Tree = {
+    val elType = extractTypeArgs(ct).head
+    q"implicitly[scala.collection.generic.CanBuildFrom[_,$elType,$ct]].apply().result()"
+  }
+
   protected def convertIterator(ct: Type, iteratorTree: Tree): Tree = {
-    val selector: Option[String] =
-      if (ct <:< typeOf[Vector[_]]) {
-        Some("toVector")
-      }else
-      if (ct <:< typeOf[List[_]]) {
-        Some("toList")
-      }else
-      if (ct <:< typeOf[IndexedSeq[_]]) {
-        Some("toIndexedSeq")
-      }else
-      if (ct <:< typeOf[Set[_]]) {
-        Some("toSet")
-      }else
-      if (ct <:< typeOf[Seq[_]]) {
-        Some("toList") // don't use toSeq which creates lazy stream sequence
-      }else
-      if (ct <:< typeOf[Array[_]]) {
-        Some("toArray")
-      }
-      else
-        None
-    selector.map { s =>
-      if (ct <:< typeOf[Set[_]]) // toSet needs also TypeApply
-        TypeApply(Select(iteratorTree, newTermName(s)), extractTypeArgs(ct))
-      else
-        Select(iteratorTree, newTermName(s))
-    } getOrElse {
-      iteratorTree
-    }
+    val elType = extractTypeArgs(ct).head
+    q"implicitly[scala.collection.generic.CanBuildFrom[_,$elType,$ct]].apply().++=($iteratorTree).result()"
   }
 
   protected def extractTypeArgs(tpe: Type): List[TypeTree] = {
@@ -489,7 +469,7 @@ private [binders] trait BinderImplementation {
     var rMax: Int = 0
     var mRes: Option[(MethodSymbol,Map[Symbol, Type])] = None
     methods.foreach({ m => // todo: replace to .max and remove vars
-      scoreFun(m) match {
+      val score = scoreFun(m) match {
         case Some((r, typeArgs)) =>
           if (r > rMax) {
             rMax = r
@@ -497,91 +477,118 @@ private [binders] trait BinderImplementation {
           }
         case None => // do nothing
       }
-      // println("Comparing " + m + " with arg type " + methodParSym.typeSignature + " for parameter " + parSym + " with type " + parSymType + " RES = " + r + " --- " + math.random)
+      // println(s"Comparing $m score = $score")
+      //println("Comparing " + m + " with arg type " + methodParSym.typeSignature + " for parameter " + parSym + " with type " + parSymType + " RES = " + r + " --- " + math.random)
     })
     mRes
   }
 
-  protected def findWriter(writers: List[MethodSymbol], valueType: Type/*, print: Boolean = false*/): Option[(MethodSymbol, Map[Symbol, Type])] = {
+  protected def findWriter(writers: List[MethodSymbol], fieldType: Type /*, print: Boolean = false*/): Option[(MethodSymbol, Map[Symbol, Type])] = {
+    //println (s"Looking writers for $fieldType from: $writers")
     mostMatching(writers, m => {
       val writerType = m.paramss.head.head // parSym 0 - value
-      Some(compareTypes(valueType, writerType.typeSignature/*, print*/, m.typeParams))
+      //println(s"comparing ${writerType.typeSignature} with $fieldType method: $m")
+      Some(compareTypes(writerType.typeSignature, fieldType/*, print*/, m.typeParams))
     })
   }
 
-  protected def compareTypes(left: Type, right: Type, typeParams: List[Symbol]): (Int, Map[Symbol, Type]) = {
-    if (left =:= right)
-      (100, Map.empty)
-    else
-    if (left <:< right)
-      (90, Map.empty)
-    else
-    if (left weak_<:< right)
-      (80, Map.empty)
-    else {
-      right match {
-        case TypeRef(rightTpe, rightSym, rightArgs) => {
-          val typeMap = collection.mutable.Map[Symbol, Type]()
-          var r =
-            if (left.typeSymbol.typeSignature =:= right.typeSymbol.typeSignature) // Outer type is matched fully
-              50
-            else
-            if (left.baseClasses.exists(_.typeSignature =:= right.typeSymbol.typeSignature)) // Outer type inherits
-              30
-            else
-            if (rightTpe == NoPrefix) {
-              // Right symbol is generic type parameter
-              typeParams.find(_ == rightSym).map{ typeParamSymbol ⇒
-                val typeMatched = typeParamSymbol.typeSignature match {
-                  case TypeBounds(lo,hi) ⇒
-                    lo <:< left && left <:< hi
-                  case other: Type ⇒
-                    left <:< other
-                }
-                if (typeMatched) {
-                  typeMap += rightSym -> left
-                  20
-                }
-                else
-                  0
-              } getOrElse {
-                0
-              }
-            }
-            else
-              0
 
-          if (r > 0) {
-            left match {
-              case TypeRef(leftTpe, leftSym, leftArgs) => {
-                // now check generic type args
-                if (leftArgs.size == rightArgs.size) {
-                  for (i <- leftArgs.indices) {
-                    val lefT = leftArgs(i)
-                    val rightT = rightArgs(i)
-                    val tR = compareTypes(lefT, rightT, typeParams)
-                    if (tR._1 != 0) {
-                      typeMap ++= tR._2
-                    }
-                    else
-                      r = 0
-                  }
-                }/* else {
-                  r = 0
-                }*/
-              }
-              /*case RefinedType(_) ⇒
-                if (rightArgs.nonEmpty)
-                  r = 0
-              case _ =>
-                r = 0*/
-              case _ ⇒ // do nothing
-            }
-          }
-          (r, typeMap.toMap)
-        }
-        case _ => (0, Map.empty)
+  def typeBoundsComply(withType: Type, genericType: Type, genericSymbol: Symbol, methodTypeParams: List[Symbol]): Boolean = {
+    methodTypeParams.find(_ == genericSymbol).forall { typeParamSymbol ⇒
+      typeParamSymbol.typeSignature match {
+        case TypeBounds(lo, hi) ⇒
+          lo <:< withType && withType <:< hi
+
+        case other: Type ⇒
+          withType <:< other
       }
+    }
+  }
+
+  def compareGenericTypesBounds(dst: Type, src: Type, typeParams: List[Symbol], rl: Int): (Int, Map[Symbol, Type]) = {
+    src match {
+      case TypeRef(srcTpe, srcSym, _) if srcTpe == NoPrefix =>
+        if (typeBoundsComply(dst, srcTpe, srcSym, typeParams))
+          (20, Map(srcSym → dst))
+        else
+          (0, Map.empty)
+
+      case _ ⇒ dst match {
+        case TypeRef(dstTpe, dstSym, _) if dstTpe == NoPrefix =>
+          if (typeBoundsComply(src, dstTpe, dstSym, typeParams))
+            (20, Map(dstSym → src))
+          else
+            (0, Map.empty)
+
+        case _ ⇒
+          (rl, Map.empty)
+      }
+    }
+  }
+
+  def compareGenericWithArgs(dstTypeArgs: List[Type], srcTypeArgs: List[Type], typeParams: List[Symbol], rl: Int) : (Int, Map[Symbol, Type])= {
+    val typeMap = collection.mutable.Map[Symbol, Type]()
+    var r = rl
+    // now check generic type args
+    if (srcTypeArgs.size == dstTypeArgs.size) {
+      for (i <- srcTypeArgs.indices) {
+        val dstT = dstTypeArgs(i)
+        val srcT = srcTypeArgs(i)
+        val tR = compareTypes(dstT, srcT, typeParams)
+        r = tR._1
+        typeMap ++= tR._2
+      }
+    }
+    else {
+      r = 5
+    }
+    (r, typeMap.toMap)
+  }
+
+  def compareGenericNoPrefix(dstTpe: Type, dstSym: Symbol, src: Type, typeParams: List[Symbol], rl: Int): (Int, Map[Symbol, Type]) = {
+    if (dstTpe == NoPrefix && typeBoundsComply(src, dstTpe, dstSym, typeParams)) {
+      val typeMap = collection.mutable.Map[Symbol, Type]()
+      typeMap += dstSym -> src
+      (rl, typeMap.toMap)
+    }
+    else {
+      (0, Map.empty)
+    }
+  }
+
+  protected def compareTypes(dst: Type, src: Type, typeParams: List[Symbol]): (Int, Map[Symbol, Type]) = {
+    if ((src =:= dst) && typeParams.isEmpty)
+      (100, Map.empty)
+    else if ((src <:< dst) && typeParams.isEmpty)
+      (90, Map.empty)
+    else if ((src weak_<:< dst) && typeParams.isEmpty)
+      (80, Map.empty)
+    else if (typeParams.nonEmpty){
+      (src, dst) match {
+        case (TypeRef(srcTpe, srcSym, srcTypeArgs), TypeRef(dstTpe, dstSym, dstTypeArgs)) => {
+          if (srcTpe != NoPrefix && src.typeSymbol.typeSignature =:= dst.typeSymbol.typeSignature) // Outer type is matched fully
+            compareGenericWithArgs(dstTypeArgs, srcTypeArgs, typeParams, 50)
+          else if (srcTpe != NoPrefix && src.baseClasses.exists(_.typeSignature =:= dst.typeSymbol.typeSignature)) // Outer type inherits
+            compareGenericWithArgs(dstTypeArgs, srcTypeArgs, typeParams, 30)
+          else {
+            val rrl = compareGenericNoPrefix(dstTpe, dstSym, src, typeParams, 20)
+            if (rrl._1 ==0) compareGenericNoPrefix(srcTpe, srcSym, dst, typeParams, 10) else rrl
+          }
+        }
+
+        case (TypeRef(srcTpe, srcSym, srcTypeArgs), _) => {
+          compareGenericNoPrefix(srcTpe, srcSym, dst, typeParams, 10)
+        }
+
+        case (_, TypeRef(dstTpe, dstSym, dstTypeArgs)) => {
+          compareGenericNoPrefix(dstTpe, dstSym, src, typeParams, 20)
+        }
+
+        case other ⇒
+          (0, Map.empty)
+      }
+    } else {
+      (0, Map.empty)
     }
   }
 
@@ -614,9 +621,11 @@ private [binders] trait BinderImplementation {
     ).map(_.asInstanceOf[MethodSymbol]).toList
   }
 
-  protected def findReader(readers: List[MethodSymbol], returnType: Type): Option[(MethodSymbol, Map[Symbol, Type])] = {
+  protected def findReader(readers: List[MethodSymbol], fieldType: Type): Option[(MethodSymbol, Map[Symbol, Type])] = {
+    //println (s"Looking readers for $fieldType from: $readers")
     mostMatching(readers, m => {
-      Some(compareTypes(returnType, m.returnType, m.typeParams))
+      //println(s"comparing $fieldType with ${m.returnType} method: $m")
+      Some(compareTypes(fieldType, m.returnType, m.typeParams))
     })
   }
 
@@ -669,19 +678,15 @@ private [binders] trait BinderImplementation {
             // searches apply method corresponding to unapply
             val applies = s.asTerm.alternatives
             val apply = applies.collectFirst {
-              case (apply: MethodSymbol) if (apply.paramss.headOption.map(_.map(_.asTerm.typeSignature)) == unapplyReturnTypes) => apply
+              case (apply: MethodSymbol) if apply.paramss.headOption.map(_.map(_.asTerm.typeSignature)) == unapplyReturnTypes => apply
+            } getOrElse {
+              s.asMethod
             }
-            apply match {
-              case Some(apply) =>
+            // println("apply found:" + apply)
+            if (apply.paramss.tail.nonEmpty)
+              c.abort(c.enclosingPosition, "Couldn't use apply method with more than a single parameter group")
 
-                // println("apply found:" + apply)
-                if (!apply.paramss.tail.isEmpty)
-                  c.abort(c.enclosingPosition, "Couldn't use apply method with more than a single parameter group")
-
-                apply.paramss.head
-
-              case None => c.abort(c.enclosingPosition, "No apply function found matching unapply parameters")
-            }
+            apply.paramss.head
         }
 
     }

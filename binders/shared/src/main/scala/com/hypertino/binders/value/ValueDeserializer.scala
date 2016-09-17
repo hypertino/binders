@@ -1,7 +1,5 @@
 package com.hypertino.binders.value
 
-import java.util.Date
-
 import com.hypertino.binders.core.Deserializer
 import com.hypertino.inflector.naming.Converter
 
@@ -16,6 +14,7 @@ class ValueDeserializerBase[C <: Converter, I <: Deserializer[C]] (value: Value,
     value match {
       case s:Lst => s.v.toIterator.map(createFieldDeserializer(_, None))
       case m:Obj => m.v.toIterator.map(kv => createFieldDeserializer(kv._2, Some(kv._1)))
+      case Null ⇒ Iterator.empty
       case _ => throw new ValueDeserializeException("Couldn't iterate on: " + value)
     }
   }
@@ -23,14 +22,13 @@ class ValueDeserializerBase[C <: Converter, I <: Deserializer[C]] (value: Value,
   protected def createFieldDeserializer(value: Value, fieldName: Option[String]): I = ???
 
   def isNull: Boolean = value == null || value == Null
-  def readString(): String = value.asString
-  def readInt(): Int = value.asInt
-  def readLong(): Long = value.asLong
-  def readDouble(): Double = value.asDouble
-  def readFloat(): Float = value.asFloat
-  def readBoolean(): Boolean = value.asBoolean
-  def readBigDecimal(): BigDecimal = value.asBigDecimal
-  def readDate(): Date = value.asDate
+  def readString(): String = value.toString
+  def readInt(): Int = value.toInt
+  def readLong(): Long = value.toLong
+  def readDouble(): Double = value.toDouble
+  def readFloat(): Float = value.toFloat
+  def readBoolean(): Boolean = value.toBoolean
+  def readBigDecimal(): BigDecimal = value.toBigDecimal
   def readValue(): Value = value
 }
 

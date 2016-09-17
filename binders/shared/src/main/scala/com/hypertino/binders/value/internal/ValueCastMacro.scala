@@ -6,14 +6,14 @@ import scala.language.experimental.macros
 import scala.language.reflectiveCalls
 import scala.reflect.macros.Context
 
-private [value] object DynamicMacro {
-  def fromValue[O: c.WeakTypeTag]
+private [value] object ValueCastMacro {
+  def to[O: c.WeakTypeTag]
   (c: Context): c.Expr[O] = {
     val c0: c.type = c
     val bundle = new {
       val c: c0.type = c0
-    } with DynamicMacroImpl
-    c.Expr[O](bundle.fromValue[O])
+    } with ValueCastMacroImpl
+    c.Expr[O](bundle.to[O])
   }
 
   def toValue[O: c.WeakTypeTag]
@@ -21,7 +21,7 @@ private [value] object DynamicMacro {
     val c0: c.type = c
     val bundle = new {
       val c: c0.type = c0
-    } with DynamicMacroImpl
+    } with ValueCastMacroImpl
     c.Expr[Value](bundle.toValue[O])
   }
 }

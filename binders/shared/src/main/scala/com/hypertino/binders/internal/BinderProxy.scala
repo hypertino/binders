@@ -13,7 +13,7 @@ private [binders] object BinderProxy {
     val c0: c.type = c
     val bundle = new {
       val c: c0.type = c0
-    } with BinderImplementation
+    } with BindersMacroImpl
     c.Expr[S](bundle.bind[S, O](value.tree))
   }
 
@@ -24,7 +24,7 @@ private [binders] object BinderProxy {
     val c0: c.type = c
     val bundle = new {
       val c: c0.type = c0
-    } with BinderImplementation
+    } with BindersMacroImpl
     c.Expr[S](bundle.bindArgs[S](t.map(_.tree)))
   }
 
@@ -35,7 +35,7 @@ private [binders] object BinderProxy {
     val c0: c.type = c
     val bundle = new {
       val c: c0.type = c0
-    } with BinderImplementation
+    } with BindersMacroImpl
     c.Expr[S](bundle.bindObject[S, O](value.tree, true))
   }
 
@@ -45,7 +45,7 @@ private [binders] object BinderProxy {
     val c0: c.type = c
     val bundle = new {
       val c: c0.type = c0
-    } with BinderImplementation
+    } with BindersMacroImpl
     c.Expr[O](bundle.unbind[D, O](false, null))
   }
 
@@ -56,7 +56,7 @@ private [binders] object BinderProxy {
     val c0: c.type = c
     val bundle = new {
       val c: c0.type = c0
-    } with BinderImplementation
+    } with BindersMacroImpl
     c.Expr[O](bundle.unbind[D, O](true, originalValue.tree))
   }
 }
