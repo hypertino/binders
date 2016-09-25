@@ -1,30 +1,28 @@
 package com.hypertino.binders.internal
 
 import com.hypertino.binders.core.{ImplicitDeserializer, ImplicitSerializer}
+import com.hypertino.binders.util.MacroAdapter
+import MacroAdapter.Context
 import com.hypertino.binders.value.Value
 import com.hypertino.inflector.naming.Converter
 
 import scala.collection.SeqLike
 import scala.language.experimental.macros
-import scala.language.reflectiveCalls
-import scala.reflect.macros.Context
 import scala.util.control.NonFatal
 
-private [binders] trait BindersMacroImpl {
-  val c: Context
+private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
+  import ctx.universe._
 
-  import c.universe._
+  def bind[S: ctx.WeakTypeTag , O: ctx.WeakTypeTag](value: ctx.Tree): ctx.Tree = {
+    val serOps = freshTerm("serOps")
 
-  def bind[S: c.WeakTypeTag , O: c.WeakTypeTag](value: c.Tree): c.Tree = {
-    val serOps = fresh("serOps")
-
-    val customSerializer = c.inferImplicitValue(weakTypeOf[ImplicitSerializer[O,_]])
+    val customSerializer = ctx.inferImplicitValue(weakTypeOf[ImplicitSerializer[O,_]])
     val block =
     if (!customSerializer.isEmpty) {
-      //c.universe.build.freshTypeName()
+      //ctx.universe.build.freshTypeName()
       //val ident =
       q"""{
-        val $serOps = ${c.prefix.tree}
+        val $serOps = ${ctx.prefix.tree}
         $customSerializer.write($serOps.serializer, $value)
         $serOps.serializer
       }"""
@@ -51,11 +49,11 @@ private [binders] trait BindersMacroImpl {
           bindObject[S, O](value, partial = false)
         }
         else
-          c.abort(c.enclosingPosition, s"No write function found for parameter with type $tpe in ${weakTypeOf[S]}")
+          ctx.abort(ctx.enclosingPosition, s"No write function found for parameter with type $tpe in ${weakTypeOf[S]}")
       }
       else {
         q"""{
-          val $serOps = ${c.prefix.tree}
+          val $serOps = ${ctx.prefix.tree}
           ${makeReaderWriterCall(q"$serOps.serializer", writer.get, List(value))}
           $serOps.serializer
           }"""
@@ -66,11 +64,11 @@ private [binders] trait BindersMacroImpl {
     block
   }
 
-  def bindArgs[S: c.WeakTypeTag](args: Seq[c.Tree]): c.Tree = {
-    val serOps = fresh("serOps")
+  def bindArgs[S: ctx.WeakTypeTag](args: Seq[ctx.Tree]): ctx.Tree = {
+    val serOps = freshTerm("serOps")
     val bindList = args.map(arg => q"$serOps.serializer.bind($arg)")
     val block = q"""{
-      val $serOps = ${c.prefix.tree}
+      val $serOps = ${ctx.prefix.tree}
       ${callIfExists[S](q"$serOps.serializer", "beginArgs")}
       ..$bindList
       ${callIfExists[S](q"$serOps.serializer", "endArgs")}
@@ -81,10 +79,10 @@ private [binders] trait BindersMacroImpl {
     block
   }
 
-  def bindOption[S: c.WeakTypeTag, O: c.WeakTypeTag](value: c.Tree): c.Tree = {
-    val serOps = fresh("serOps")
+  def bindOption[S: ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree): ctx.Tree = {
+    val serOps = freshTerm("serOps")
     val block = q"""{
-      val $serOps = ${c.prefix.tree}
+      val $serOps = ${ctx.prefix.tree}
       $value.map($serOps.serializer.bind(_)).getOrElse {
         $serOps.serializer.writeNull
       }
@@ -94,12 +92,12 @@ private [binders] trait BindersMacroImpl {
     block
   }
 
-  def bindEither[S: c.WeakTypeTag, O: c.WeakTypeTag](value: c.Tree): c.Tree = {
-    val serOps = fresh("serOps")
-    val left = fresh("left")
-    val right = fresh("right")
+  def bindEither[S: ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree): ctx.Tree = {
+    val serOps = freshTerm("serOps")
+    val left = freshTerm("left")
+    val right = freshTerm("right")
     val block = q"""{
-      val $serOps = ${c.prefix.tree}
+      val $serOps = ${ctx.prefix.tree}
       $value match {
         case Left($left) => $serOps.serializer.bind($left)
         case Right($right) => $serOps.serializer.bind($right)
@@ -110,9 +108,9 @@ private [binders] trait BindersMacroImpl {
     block
   }
 
-  def bindObject[S: c.WeakTypeTag, O: c.WeakTypeTag](value: c.Tree, partial: Boolean): c.Tree = {
-    val serOps = fresh("serOps")
-    val o = fresh("o")
+  def bindObject[S: ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree, partial: Boolean): ctx.Tree = {
+    val serOps = freshTerm("serOps")
+    val o = freshTerm("o")
     val converter = findConverter[S]
     val caseClassParams = extractCaseClassParams[O]
 
@@ -133,7 +131,7 @@ private [binders] trait BindersMacroImpl {
 
     val block = q"""{
       import com.hypertino.binders.internal.Helpers._
-      val $serOps = ${c.prefix.tree}
+      val $serOps = ${ctx.prefix.tree}
       val $o = $value
       ${callIfExists[S](q"$serOps.serializer", "beginObject")}
       ..$listOfCalls
@@ -144,10 +142,10 @@ private [binders] trait BindersMacroImpl {
     block
   }
 
-  def bindTraversable[S : c.WeakTypeTag, O: c.WeakTypeTag](value: c.Tree): c.Tree = {
-    val serOps = fresh("serOps")
+  def bindTraversable[S : ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree): ctx.Tree = {
+    val serOps = freshTerm("serOps")
     val block = q"""{
-      val $serOps = ${c.prefix.tree}
+      val $serOps = ${ctx.prefix.tree}
       ${callIfExists[S](q"$serOps.serializer", "beginArray")}
       $value.foreach($serOps.bind(_))
       ${callIfExists[S](q"$serOps.serializer", "endArray")}
@@ -157,12 +155,12 @@ private [binders] trait BindersMacroImpl {
     block
   }
 
-  def bindMap(value: c.Tree): c.Tree = {
-    val serOps = fresh("serOps")
-    val k = fresh("k")
-    val v = fresh("v")
+  def bindMap(value: ctx.Tree): ctx.Tree = {
+    val serOps = freshTerm("serOps")
+    val k = freshTerm("k")
+    val v = freshTerm("v")
     val block = q"""{
-      val $serOps = ${c.prefix.tree}
+      val $serOps = ${ctx.prefix.tree}
       $serOps.serializer.beginObject()
       $value.foreach{case ($k,$v) => {
         $serOps.serializer.getFieldSerializer($k).map(_.bind($v))
@@ -174,14 +172,14 @@ private [binders] trait BindersMacroImpl {
     block
   }
 
-  def unbind[D: c.WeakTypeTag, O: c.WeakTypeTag](partial: Boolean, originalValue: c.Tree): c.Tree = {
-    val dserOps = fresh("dserOps")
-    val customDeserializer = c.inferImplicitValue(weakTypeOf[ImplicitDeserializer[O, _]])
+  def unbind[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag](partial: Boolean, originalValue: ctx.Tree): ctx.Tree = {
+    val dserOps = freshTerm("dserOps")
+    val customDeserializer = ctx.inferImplicitValue(weakTypeOf[ImplicitDeserializer[O, _]])
     //println(customDeserializer)
     val block =
       if (!customDeserializer.isEmpty) {
         q"""{
-          val $dserOps = ${c.prefix.tree}
+          val $dserOps = ${ctx.prefix.tree}
           $customDeserializer.read($dserOps.deserializer)
         }"""
       }
@@ -192,7 +190,7 @@ private [binders] trait BindersMacroImpl {
         val reader = findReader(readers, tpe)
         reader.map { readerMethod =>
           q"""{
-            val $dserOps = ${c.prefix.tree}
+            val $dserOps = ${ctx.prefix.tree}
             ${makeReaderWriterCall(q"$dserOps.deserializer", readerMethod)}
           }"""
         } getOrElse {
@@ -212,7 +210,7 @@ private [binders] trait BindersMacroImpl {
                 unbindIterable[D, O]
               }
               else {
-                c.abort(c.enclosingPosition, s"No read function found for $tpe in ${weakTypeOf[D]}")
+                ctx.abort(ctx.enclosingPosition, s"No read function found for $tpe in ${weakTypeOf[D]}")
               }
             case s => unbindObject[D,O](partial, originalValue)
           }
@@ -222,13 +220,13 @@ private [binders] trait BindersMacroImpl {
     block
   }
 
-  def unbindOption[D: c.WeakTypeTag, O: c.WeakTypeTag]: c.Tree = {
-    val dserOps = fresh("dserOps")
+  def unbindOption[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag]: ctx.Tree = {
+    val dserOps = freshTerm("dserOps")
     val tpe = weakTypeOf[O]
     val elTpe = extractTypeArgs(tpe).head
 
     val block = q"""{
-      val $dserOps = ${c.prefix.tree}
+      val $dserOps = ${ctx.prefix.tree}
       if ($dserOps.deserializer.isNull)
         None
       else
@@ -238,15 +236,15 @@ private [binders] trait BindersMacroImpl {
     block
   }
 
-  def unbindEither[D: c.WeakTypeTag, O: c.WeakTypeTag]: c.Tree = {
-    val dserOps = fresh("dserOps")
-    val v = fresh("v")
-    val leftIsBetter = fresh("leftIsBetter")
-    val r = fresh("r")
-    val r1 = fresh("r1")
-    val r2 = fresh("r2")
-    val e1 = fresh("e1")
-    val e2 = fresh("e2")
+  def unbindEither[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag]: ctx.Tree = {
+    val dserOps = freshTerm("dserOps")
+    val v = freshTerm("v")
+    val leftIsBetter = freshTerm("leftIsBetter")
+    val r = freshTerm("r")
+    val r1 = freshTerm("r1")
+    val r2 = freshTerm("r2")
+    val e1 = freshTerm("e1")
+    val e2 = freshTerm("e2")
     val tpe = weakTypeOf[O]
     val left = extractTypeArgs(tpe).head
     val right = extractTypeArgs(tpe).tail.head
@@ -255,7 +253,7 @@ private [binders] trait BindersMacroImpl {
     val rightDStr = getTypeValueString(right.tpe)
 
     val block = q"""{
-      val $dserOps = ${c.prefix.tree}
+      val $dserOps = ${ctx.prefix.tree}
       import com.hypertino.binders.value._
       import scala.util._
       val $v = $dserOps.deserializer.unbind[com.hypertino.binders.value.Value]
@@ -305,22 +303,22 @@ private [binders] trait BindersMacroImpl {
     //Iterable
   }
 
-  def unbindIterable[D: c.WeakTypeTag, O: c.WeakTypeTag]: c.Tree = {
-    val dserOps = fresh("dserOps")
+  def unbindIterable[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag]: ctx.Tree = {
+    val dserOps = freshTerm("dserOps")
     val tpe = weakTypeOf[O]
     val elTpe = extractTypeArgs(tpe).head
     val q = q"""{
-      val $dserOps = ${c.prefix.tree}
+      val $dserOps = ${ctx.prefix.tree}
       ${convertIterator(tpe, q"$dserOps.deserializer.iterator().map(_.unbind[$elTpe])")}
     }"""
     //println(q)
     q
   }
 
-  def unbindObject[D: c.WeakTypeTag, O: c.WeakTypeTag](partial: Boolean, originalValue: c.Tree): c.Tree = {
-    val dserOps = fresh("dserOps")
-    val i = fresh("i")
-    val orig = fresh("orig")
+  def unbindObject[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag](partial: Boolean, originalValue: ctx.Tree): ctx.Tree = {
+    val dserOps = freshTerm("dserOps")
+    val i = freshTerm("i")
+    val orig = freshTerm("orig")
     val converter = findConverter[D]
     val caseClassParams = extractCaseClassParams[O]
     val companionSymbol = weakTypeOf[O].typeSymbol.companionSymbol
@@ -378,7 +376,7 @@ private [binders] trait BindersMacroImpl {
     }
 
     val block = q"""{
-      val $dserOps = ${c.prefix.tree}
+      val $dserOps = ${ctx.prefix.tree}
       ${if (partial) { q"val $orig = $originalValue" } else q""}
       ..${vars.map(_._1)}
       $dserOps.deserializer.iterator().foreach{case $i =>
@@ -398,13 +396,13 @@ private [binders] trait BindersMacroImpl {
     block
   }
 
-  def unbindMap[O: c.WeakTypeTag]: c.Tree = {
-    val dserOps = fresh("dserOps")
-    val el = fresh("el")
+  def unbindMap[O: ctx.WeakTypeTag]: ctx.Tree = {
+    val dserOps = freshTerm("dserOps")
+    val el = freshTerm("el")
     val tpe = weakTypeOf[O]
     val elTpe = extractTypeArgs(tpe).tail.head
     val block = q"""{
-      val $dserOps = ${c.prefix.tree}
+      val $dserOps = ${ctx.prefix.tree}
       $dserOps.deserializer.iterator().map{ case $el =>
         ($el.fieldName.get, $el.unbind[$elTpe])
       }.toMap
@@ -427,7 +425,7 @@ private [binders] trait BindersMacroImpl {
     tpe.normalize match {
       case TypeRef(_, _, args) => args.map(TypeTree(_))
       case _ =>
-        c.abort(c.enclosingPosition, s"Can't extract typeArgs from $tpe")
+        ctx.abort(ctx.enclosingPosition, s"Can't extract typeArgs from $tpe")
     }
   }
 
@@ -441,7 +439,7 @@ private [binders] trait BindersMacroImpl {
           srcTypeArgs.get(genericTypeSymbol).map { srcTypeArg =>
             TypeTree(srcTypeArg)
           } getOrElse {
-            c.abort(c.enclosingPosition, "Can't find generic arg source for " + select + " / " + genericTypeSymbol)
+            ctx.abort(ctx.enclosingPosition, "Can't find generic arg source for " + select + " / " + genericTypeSymbol)
           }
         })
     }
@@ -592,7 +590,7 @@ private [binders] trait BindersMacroImpl {
     }
   }
 
-  protected def callIfExists[S: c.WeakTypeTag](o: c.Tree, methodName: String): c.Tree = {
+  protected def callIfExists[S: ctx.WeakTypeTag](o: ctx.Tree, methodName: String): ctx.Tree = {
     weakTypeOf[S].members.filter(member => member.isMethod &&
       member.name.decoded == methodName &&
       member.isPublic && {
@@ -609,7 +607,7 @@ private [binders] trait BindersMacroImpl {
     }
   }
 
-  protected def extractWriters[T: c.WeakTypeTag]: List[MethodSymbol] = {
+  protected def extractWriters[T: ctx.WeakTypeTag]: List[MethodSymbol] = {
     weakTypeOf[T].members.filter(member => member.isMethod &&
       member.name.decoded.startsWith("write") &&
       member.isPublic && {
@@ -629,7 +627,7 @@ private [binders] trait BindersMacroImpl {
     })
   }
 
-  protected def extractReaders[T: c.WeakTypeTag]: List[MethodSymbol] = {
+  protected def extractReaders[T: ctx.WeakTypeTag]: List[MethodSymbol] = {
     weakTypeOf[T].members.filter(member => member.isMethod &&
       member.name.decoded.startsWith("read") &&
       member.isPublic && {
@@ -644,19 +642,19 @@ private [binders] trait BindersMacroImpl {
 
   protected def allImplicits(symbols: List[List[Symbol]]): Boolean = symbols.flatten.filter(!_.isImplicit).isEmpty
 
-  protected def extractCaseClassParams[T: c.WeakTypeTag]: List[c.Symbol] = {
+  protected def extractCaseClassParams[T: ctx.WeakTypeTag]: List[ctx.Symbol] = {
 
     val companioned = weakTypeOf[T].typeSymbol
     val companionSymbol = companioned.companionSymbol
     val companionType = companionSymbol.typeSignature
 
     companionType.declaration(newTermName("unapply")) match {
-      case NoSymbol => c.abort(c.enclosingPosition, s"No setter or unapply function found for ${companioned.fullName}")
+      case NoSymbol => ctx.abort(ctx.enclosingPosition, s"No setter or unapply function found for ${companioned.fullName}")
       case s =>
         val unapply = s.asMethod
         val unapplyReturnTypes = unapply.returnType match {
           case TypeRef(_, _, Nil) =>
-            c.abort(c.enclosingPosition, s"Apply of ${companionSymbol} has no parameters. Are you using an empty case class?")
+            ctx.abort(ctx.enclosingPosition, s"Apply of ${companionSymbol} has no parameters. Are you using an empty case class?")
           case TypeRef(_, _, args) =>
             args.head match {
               case t@TypeRef(_, _, Nil) => Some(List(t))
@@ -673,7 +671,7 @@ private [binders] trait BindersMacroImpl {
         }
 
         companionType.declaration(newTermName("apply")) match {
-          case NoSymbol => c.abort(c.enclosingPosition, "No apply function found")
+          case NoSymbol => ctx.abort(ctx.enclosingPosition, "No apply function found")
           case s =>
             // searches apply method corresponding to unapply
             val applies = s.asTerm.alternatives
@@ -684,7 +682,7 @@ private [binders] trait BindersMacroImpl {
             }
             // println("apply found:" + apply)
             if (apply.paramss.tail.nonEmpty)
-              c.abort(c.enclosingPosition, "Couldn't use apply method with more than a single parameter group")
+              ctx.abort(ctx.enclosingPosition, "Couldn't use apply method with more than a single parameter group")
 
             apply.paramss.head
         }
@@ -692,7 +690,7 @@ private [binders] trait BindersMacroImpl {
     }
   }
 
-  protected def identToFieldName(symbol: c.Symbol, converter: Option[Converter]): Literal = {
+  protected def identToFieldName(symbol: ctx.Symbol, converter: Option[Converter]): Literal = {
 
     val annotation = symbol.annotations.find(a => a.tpe == typeOf[com.hypertino.binders.annotations.fieldName])
     val (fieldName,useConverter) = annotation.map { a =>
@@ -723,7 +721,7 @@ private [binders] trait BindersMacroImpl {
     ))
   }
 
-  protected def findConverter[T: c.WeakTypeTag]: Option[Converter] = {
+  protected def findConverter[T: ctx.WeakTypeTag]: Option[Converter] = {
     val tpe = weakTypeOf[T]
     val converterTypeName = newTypeName("nameConverterType")
 
@@ -738,7 +736,7 @@ private [binders] trait BindersMacroImpl {
             t.baseClasses.find(t.typeSymbol.isClass && _ == typeOf[Converter].typeSymbol).map { x =>
               t.typeSymbol.asClass
             } orElse {
-              c.abort(c.enclosingPosition, s"$tpe.nameConverterType: ${t} is not a valid Converter, please use PlainConverter if you don't need convert identifier names")
+              ctx.abort(ctx.enclosingPosition, s"$tpe.nameConverterType: $t is not a valid Converter, please use PlainConverter if you don't need convert identifier names")
             }
         }
     }.headOption
@@ -769,6 +767,4 @@ private [binders] trait BindersMacroImpl {
       }
     }
   }
-
-  def fresh(prefix: String): TermName = newTermName(c.fresh(prefix))
 }

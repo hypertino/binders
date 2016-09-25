@@ -1,6 +1,6 @@
 import sbt.Keys._
 
-crossScalaVersions := Seq("2.11.8"/*, "2.10.6"*/)
+crossScalaVersions := Seq("2.11.8", "2.10.6")
 
 organization in Global := "com.hypertino"
 

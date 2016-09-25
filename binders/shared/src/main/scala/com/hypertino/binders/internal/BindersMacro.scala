@@ -1,10 +1,9 @@
 package com.hypertino.binders.internal
 
-import scala.language.reflectiveCalls
-import scala.reflect.macros.Context
+import com.hypertino.binders.util.MacroAdapter.Context
 import language.experimental.macros
 
-private [binders] object BinderProxy {
+private [binders] object BindersMacro {
 
   def bind[S: c.WeakTypeTag, O: c.WeakTypeTag]
   (c: Context)
@@ -12,7 +11,7 @@ private [binders] object BinderProxy {
 
     val c0: c.type = c
     val bundle = new {
-      val c: c0.type = c0
+      val ctx: c0.type = c0
     } with BindersMacroImpl
     c.Expr[S](bundle.bind[S, O](value.tree))
   }
@@ -23,7 +22,7 @@ private [binders] object BinderProxy {
 
     val c0: c.type = c
     val bundle = new {
-      val c: c0.type = c0
+      val ctx: c0.type = c0
     } with BindersMacroImpl
     c.Expr[S](bundle.bindArgs[S](t.map(_.tree)))
   }
@@ -34,7 +33,7 @@ private [binders] object BinderProxy {
 
     val c0: c.type = c
     val bundle = new {
-      val c: c0.type = c0
+      val ctx: c0.type = c0
     } with BindersMacroImpl
     c.Expr[S](bundle.bindObject[S, O](value.tree, true))
   }
@@ -44,7 +43,7 @@ private [binders] object BinderProxy {
 
     val c0: c.type = c
     val bundle = new {
-      val c: c0.type = c0
+      val ctx: c0.type = c0
     } with BindersMacroImpl
     c.Expr[O](bundle.unbind[D, O](false, null))
   }
@@ -55,7 +54,7 @@ private [binders] object BinderProxy {
 
     val c0: c.type = c
     val bundle = new {
-      val c: c0.type = c0
+      val ctx: c0.type = c0
     } with BindersMacroImpl
     c.Expr[O](bundle.unbind[D, O](true, originalValue.tree))
   }
