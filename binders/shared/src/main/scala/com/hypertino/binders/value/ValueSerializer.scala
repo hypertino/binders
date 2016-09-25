@@ -37,7 +37,7 @@ abstract class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait
   def writeBigDecimal(value: BigDecimal) = if(value == null) writeNull() else writeValue(Number(value))
   def writeInt(value: Int) = writeValue(Number(value))
   def writeLong(value: Long) = writeValue(Number(value))
-  def writeFloat(value: Float) = writeValue(Number(BigDecimal(value)))
+  def writeFloat(value: Float) = writeValue(Number(BigDecimal(value.toDouble)))
   def writeDouble(value: Double) = writeValue(Number(value))
   def writeDate(value: Date) = if(value == null) writeNull() else writeValue(Number(value.getTime))
 

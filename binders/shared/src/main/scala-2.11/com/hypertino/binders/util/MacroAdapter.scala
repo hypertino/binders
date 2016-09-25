@@ -6,6 +6,11 @@ trait MacroAdapter[C <: MacroAdapter.Context] {
 
   def freshName(prefix: String) = ctx.freshName(prefix)
   def freshTerm(prefix: String): TermName = TermName(freshName(prefix))
+
+  implicit class AnnotationExtenders(a: AnnotationApi) {
+    def arguments = a.tree.children.tail
+    def treeTpe = a.tree.tpe
+  }
 }
 
 object MacroAdapter {

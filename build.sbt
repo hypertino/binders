@@ -94,3 +94,5 @@ publishArtifact := false
 publish := ()
 
 publishLocal := ()
+
+scalacOptions in Global ++= Seq("-feature", "-deprecation")

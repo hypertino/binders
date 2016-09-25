@@ -35,10 +35,20 @@ trait MacroAdapter[C <: MacroAdapter.Context] {
 
     def dealias:Type = t.normalize
     def resultType: Type = t
+    def decl(name: Name) = t.declaration(name)
   }
 
   implicit class MethodExtenders(m: MethodSymbolApi) {
     def paramLists = m.paramss
+  }
+
+  implicit class SymbolExtenders(s: Symbol) {
+    def companion = s.companionSymbol
+  }
+
+  implicit class AnnotationExtenders(a: AnnotationApi) {
+    def arguments = a.scalaArgs
+    def treeTpe = a.tpe
   }
 }
 
