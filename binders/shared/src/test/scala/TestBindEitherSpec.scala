@@ -43,4 +43,13 @@ class TestBindEitherSpec extends FlatSpec with Matchers with MockFactory {
     val i4 = m.unbind[Either[TestClass1,Seq[Int]]]
     i4 shouldBe Right(Seq(1,2,3))
   }
+
+  it should "prefer right for Either[_,_] if left & right conforms" in {
+    import com.hypertino.binders.value._
+    val m = mock[TestDeserializer[PlainConverter.type]]
+
+    m.readValue _ expects() returning Number(123456l)
+    val i4 = m.unbind[Either[Int,Long]]
+    i4 shouldBe Right(123456l)
+  }
 }

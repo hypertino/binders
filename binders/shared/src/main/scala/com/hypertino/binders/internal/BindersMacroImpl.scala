@@ -1,14 +1,13 @@
 package com.hypertino.binders.internal
 
 import com.hypertino.binders.core.{ImplicitDeserializer, ImplicitSerializer}
-import com.hypertino.binders.util.{MacroAdapter, Runtime, RuntimeUniverseAdapter}
-import MacroAdapter.Context
+import com.hypertino.binders.util.MacroAdapter.Context
+import com.hypertino.binders.util.{MacroAdapter, Runtime}
 import com.hypertino.binders.value.Value
 import com.hypertino.inflector.naming.Converter
 
 import scala.collection.SeqLike
 import scala.language.experimental.macros
-import scala.util.control.NonFatal
 
 private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
   import ctx.universe._
@@ -99,8 +98,8 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     val block = q"""{
       val $serOps = ${ctx.prefix.tree}
       $value match {
-        case Left($left) => $serOps.serializer.bind($left)
         case Right($right) => $serOps.serializer.bind($right)
+        case Left($left) => $serOps.serializer.bind($left)
       }
       $serOps.serializer.serializer
       }"""
@@ -239,7 +238,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
   def unbindEither[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag]: ctx.Tree = {
     val dserOps = freshTerm("dserOps")
     val v = freshTerm("v")
-    val leftIsBetter = freshTerm("leftIsBetter")
+    val rightIsBetter = freshTerm("rightIsBetter")
     val r = freshTerm("r")
     val r1 = freshTerm("r1")
     val r2 = freshTerm("r2")
@@ -257,14 +256,14 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
       import com.hypertino.binders.value._
       import scala.util._
       val $v = $dserOps.deserializer.unbind[com.hypertino.binders.value.Value]
-      val $leftIsBetter = com.hypertino.binders.internal.Helpers.getConformity($leftDStr,$v) >=
+      val $rightIsBetter = com.hypertino.binders.internal.Helpers.getConformity($leftDStr,$v) <=
         com.hypertino.binders.internal.Helpers.getConformity($rightDStr,$v)
 
-      val $r = Try (if ($leftIsBetter) Left($v.to[$left]) else Right($v.to[$right]))
+      val $r = Try (if ($rightIsBetter) Right($v.to[$right]) else Left($v.to[$left]))
         match {
           case Success($r1) => $r1
           case Failure($e1) =>
-            Try (if ($leftIsBetter) Right($v.to[$right]) else Left($v.to[$left]))
+            Try (if ($rightIsBetter) Left($v.to[$left]) else Right($v.to[$right]))
             match {
               case Success($r2) => $r2
               case Failure($e2) =>
