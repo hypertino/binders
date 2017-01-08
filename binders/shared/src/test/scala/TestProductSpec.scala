@@ -11,7 +11,7 @@ object DefineType {
 
 case class TestProduct(intValue1: Int, nullableValue: Option[Int], intValue2: Int)
 case class TestInnerProduct(inner: TestProduct, nullableInner: Option[TestProduct], nullableInner1: Option[TestProduct])
-case class TestProductAnnotated(@fieldName("f1Value") intValue1: Int, @fieldName("f2Value", true) intValue2: Int)
+case class TestProductAnnotated(@fieldName("f1Value") intValue1Ant: Int, @fieldName("f2Value", true) intValue2: Int)
 
 trait TestTrait {
   def intValue: Int
@@ -23,7 +23,18 @@ object TestTrait {
   def unapply(t: TestTrait) = Some((t.intValue, t.stringValue))
 }
 
-case class TraitContainer(intValue: Int, stringValue: String) extends TestTrait
+trait TestTraitAnnotated {
+  def intValue: Int
+  def stringValue: String
+}
+
+object TestTraitAnnotated {
+  def apply(@fieldName("f1Value") intValue: Int, @fieldName("f2Value", true) stringValue: String): TestTraitAnnotated = TraitContainer(intValue, stringValue)
+  def unapply(t: TestTraitAnnotated) = Some((t.intValue, t.stringValue))
+}
+
+
+case class TraitContainer(intValue: Int, stringValue: String) extends TestTrait with TestTraitAnnotated
 
 class TestProductSpec extends FlatSpec with Matchers with MockFactory {
   "all case class fields " should " be serialized by names " in {
@@ -229,7 +240,7 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     )
   }
 
-  "annotated field " should " be serialized " in {
+  "annotated fields of case class " should " be serialized " in {
     val m = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
     val m1 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
     val m2 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
@@ -243,6 +254,22 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
       m.endObject _ expects ()
     }
     m.bind(TestProductAnnotated(576, 90))
+  }
+
+  "annotated fields of trait with companion " should " be serialized " in {
+    val m = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
+    val m1 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
+    val m2 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
+
+    inSequence {
+      m.beginObject _ expects()
+      m.getFieldSerializer _ expects "f1Value" returning Some(m1)
+      m1.writeInt _ expects 576
+      m.getFieldSerializer _ expects "f2_value" returning Some(m2)
+      m2.writeString _ expects "90"
+      m.endObject _ expects ()
+    }
+    m.bind(TestTraitAnnotated(576, "90"))
   }
 
   "trait fields " should " be serialized" in {

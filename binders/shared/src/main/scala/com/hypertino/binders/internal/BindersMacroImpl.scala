@@ -640,8 +640,8 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
   protected def allImplicits(symbols: List[List[Symbol]]): Boolean = !symbols.flatten.exists(!_.isImplicit)
 
   protected def extractCaseClassParams[T: ctx.WeakTypeTag]: List[ctx.Symbol] = {
-
-    val companioned = weakTypeOf[T].typeSymbol
+    val dealiased = weakTypeOf[T].dealias
+    val companioned = dealiased.typeSymbol
     val companionSymbol = companioned.companion
     val companionType = companionSymbol.typeSignature
 
@@ -677,23 +677,26 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
             } getOrElse {
               sym.asMethod
             }
-            // println("apply found:" + apply)
+
             if (apply.paramLists.tail.nonEmpty)
               ctx.abort(ctx.enclosingPosition, "Couldn't use apply method with more than a single parameter group")
 
-            apply.paramLists.head
+            val applyOrConstructor = dealiased.members.filter(_.isConstructor).collectFirst {
+              case (cntr: MethodSymbol) if cntr.paramLists.headOption.map(_.map(_.asTerm.typeSignature)) == unapplyReturnTypes => cntr
+            } getOrElse {
+              apply
+            }
+            // println("apply found:" + apply)
+
+            applyOrConstructor.paramLists.head
         }
 
     }
   }
 
   protected def identToFieldName(symbol: ctx.Symbol, converter: Option[Converter]): Literal = {
-
     val annotation = symbol.annotations.find(a => a.treeTpe == typeOf[com.hypertino.binders.annotations.fieldName])
     val (fieldName,useConverter) = annotation.map { a =>
-      /*a.scalaArgs.foreach(x =>
-        println(s"${x.getClass}/$x")
-      )*/
       (a.arguments.head match {
         case Literal(Constant(s:String)) => s
         case _ => symbol.name.decodedName.toString

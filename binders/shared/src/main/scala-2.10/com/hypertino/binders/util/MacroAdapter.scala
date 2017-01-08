@@ -44,6 +44,7 @@ trait MacroAdapter[C <: MacroAdapter.Context] {
 
   implicit class SymbolExtenders(s: Symbol) {
     def companion = s.companionSymbol
+    def isConstructor: Boolean = s.isMethod && s.asMethod.isConstructor
   }
 
   implicit class AnnotationExtenders(a: AnnotationApi) {
