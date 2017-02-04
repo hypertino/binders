@@ -10,7 +10,7 @@ lazy val binders = crossProject.settings(publishSettings:_*).settings(
     scalaVersion := "2.12.1",
     libraryDependencies ++= Seq(
       "com.hypertino" %%% "inflector" % "1.0.1",
-      "com.hypertino" %%% "scalamock-scalatest-support" % "3.4-SNAPSHOT" % "test",
+      "org.scalamock" %%% "scalamock-scalatest-support" % "3.5.0" % "test",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     ) ++ {
       CrossVersion.partialVersion(scalaVersion.value) match {
