@@ -1,9 +1,10 @@
-import com.hypertino.binders.value.{Lst, Null, ObjV}
+import com.hypertino.binders.value.{Lst, Null, ObjV, ValueBinders}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
 
 import scala.collection.generic.CanBuildFrom
 import scala.collection.{TraversableLike, mutable}
+import ValueBinders._
 
 class CustomColl[+A] extends Traversable[A] with TraversableLike[A, CustomColl[A]]{
   override protected[this] def newBuilder: mutable.Builder[A, CustomColl[A]] = CustomColl.newBuilder[A]

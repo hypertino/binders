@@ -1,7 +1,8 @@
-import com.hypertino.binders.value.{Lst, Number, Text}
+import com.hypertino.binders.value.{Lst, Number, Text, ValueBinders}
 import com.hypertino.inflector.naming.PlainConverter
 import org.scalatest.{FlatSpec, Matchers}
 import org.scalamock.scalatest.MockFactory
+import ValueBinders._
 
 case class TestClass1(x:Int)
 

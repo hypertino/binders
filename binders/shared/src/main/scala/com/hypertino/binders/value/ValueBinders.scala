@@ -1,11 +1,11 @@
-package com.hypertino.binders
+package com.hypertino.binders.value
 
 import com.hypertino.binders.value.internal.ValueCastMacro
 
 import scala.language.experimental.macros
 import scala.language.implicitConversions
 
-package object value {
+object ValueBinders {
   implicit class ValueReader(val value: Value) extends AnyVal {
     def to[O]: O = macro ValueCastMacro.to[O]
   }

@@ -1,7 +1,6 @@
-
-
 import com.hypertino.binders.value._
 import org.scalatest._
+import ValueBinders._
 
 case class TestValue(a:Int, b:String, c:Boolean)
 
