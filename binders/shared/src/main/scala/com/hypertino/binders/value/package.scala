@@ -6,11 +6,11 @@ import scala.language.experimental.macros
 import scala.language.implicitConversions
 
 package object value {
-  implicit class ValueReader(val value: Value) {
+  implicit class ValueReader(val value: Value) extends AnyVal {
     def to[O]: O = macro ValueCastMacro.to[O]
   }
 
-  implicit class ValueGenerator[O](val obj: O) {
+  implicit class ValueGenerator[O](val obj: O) extends AnyVal {
     def toValue: Value = macro ValueCastMacro.toValue[O]
   }
 
