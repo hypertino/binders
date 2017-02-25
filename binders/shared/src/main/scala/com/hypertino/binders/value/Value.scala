@@ -2,7 +2,6 @@ package com.hypertino.binders.value
 
 import scala.language.dynamics
 import scala.language.experimental.macros
-import ValueBinders._
 
 sealed trait Value extends Any with Dynamic {
   def ~~[T](visitor: ValueVisitor[T]): T
