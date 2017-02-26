@@ -197,12 +197,10 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
 object Obj {
   val empty = new Obj(Map.empty)
   def apply(): Obj = empty
-}
 
-object ObjV {
   // currently there is only mutable effective map that preserves order
   // so we use LinkedHashMap for that
-  def apply(v: (String,Value)*): Obj = {
+  def from(v: (String,Value)*): Obj = {
     if (v.isEmpty)
       Obj.empty
     else
@@ -238,16 +236,15 @@ case class Lst(v: Seq[Value]) extends AnyVal with Value{
 object Lst {
   val empty = Lst(Seq.empty)
   def apply(): Lst = empty
-}
 
-object LstV { // can't be Lst :-(
-  def apply(seq: Value*): Lst = {
+  def from(seq: Value*): Lst = {
     if (seq.isEmpty)
       Lst.empty
     else
       Lst(seq)
   }
 }
+
 
 trait Bool extends Value with Product {
   val v: Boolean

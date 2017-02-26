@@ -98,14 +98,14 @@ class TestValueSpec extends FlatSpec with Matchers {
   "valueAs " should " deserialize StringMap = Map[String,String] " in {
     import DefineType2._
 
-    val m = ObjV("a" -> "he", "b" -> "ho")
+    val m = Obj.from("a" -> "he", "b" -> "ho")
     val map = m.to[StringMap]
     map should equal(Map("a"->"he", "b"->"ho"))
   }
 
   "Value " should " allow selectDynamic " in {
-    val d = ObjV("a" -> 1, "b" -> "ho", "c" -> true, "_" -> false,
-      "inner" → ObjV("x" → "100500")
+    val d = Obj.from("a" -> 1, "b" -> "ho", "c" -> true, "_" -> false,
+      "inner" → Obj.from("x" → "100500")
     )
     val a = d.a
     a should equal(Number(1))
@@ -121,22 +121,22 @@ class TestValueSpec extends FlatSpec with Matchers {
   }
 
   "Obj " should " merge (+) " in {
-    val value1 = ObjV("a" -> 1, "b" -> "ho", "c" -> true, "d" → 5, "e" → "kl")
-    val value2 = ObjV("a" -> 2, "b" -> "no", "c" -> false, "d" → Null)
+    val value1 = Obj.from("a" -> 1, "b" -> "ho", "c" -> true, "d" → 5, "e" → "kl")
+    val value2 = Obj.from("a" -> 2, "b" -> "no", "c" -> false, "d" → Null)
     val value3 = value1 + value2
-    value3 should equal(ObjV("a" -> 2, "b" -> "no", "c" -> false, "d" → Null, "e" → Text("kl")))
+    value3 should equal(Obj.from("a" -> 2, "b" -> "no", "c" -> false, "d" → Null, "e" → Text("kl")))
   }
 
   "Obj " should " subtract (-) " in {
-    val value1 = ObjV("a" -> 1, "b" -> "ho", "c" -> true, "d" → 5, "e" → "kl")
-    val value2 = ObjV("a" -> Null, "d" → 8)
+    val value1 = Obj.from("a" -> 1, "b" -> "ho", "c" -> true, "d" → 5, "e" → "kl")
+    val value2 = Obj.from("a" -> Null, "d" → 8)
     val value3 = value1 - value2
-    value3 should equal(ObjV("b" -> "ho", "c" -> true, "e" → Text("kl")))
+    value3 should equal(Obj.from("b" -> "ho", "c" -> true, "e" → Text("kl")))
   }
 
   "Obj " should " preserve order of fields " in {
     val seq = Seq[(String, Value)]("a" -> 1, "b" -> "ho", "c" -> true, "d" → 5, "e" → "kl")
-    val value1 = ObjV(seq: _*)
+    val value1 = Obj.from(seq: _*)
 
     val z = seq.zipWithIndex.map(a ⇒ a._2 → a._1).toMap
 
@@ -147,10 +147,10 @@ class TestValueSpec extends FlatSpec with Matchers {
   }
 
   "implicits" should "do conversion" in {
-    val obj = ObjV("a" → 5, "b" → "18")
+    val obj = Obj.from("a" → 5, "b" → "18")
     obj should equal(Obj(Map("a"→Number(5), "b"→Text("18"))))
 
-    val obj2 = ObjV("a" → "b")
+    val obj2 = Obj.from("a" → "b")
     obj2 should equal(Obj(Map("a"→Text("b"))))
 
     val lst = Lst(Seq("a",1,false))
@@ -158,12 +158,12 @@ class TestValueSpec extends FlatSpec with Matchers {
   }
 
   "Value " should "do pattern matching" in {
-    val obj = ObjV("a" → 5, "b" → "18")
+    val obj = Obj.from("a" → 5, "b" → "18")
     obj match {
       case Obj(map) ⇒ // fine
     }
 
-    val lst: Value = LstV("a",1,false)
+    val lst: Value = Lst.from("a",1,false)
     lst match {
       case Lst(seq) ⇒ // fine
       case Bool(_) ⇒ fail
@@ -237,17 +237,17 @@ class TestValueSpec extends FlatSpec with Matchers {
   }
 
   "Lst operators " should "work" in {
-    LstV(1,2,3) ++ LstV(4,5) shouldBe LstV(1,2,3,4,5)
-    LstV(1,2,3) + 4 shouldBe LstV(1,2,3,4)
-    LstV(1,2,3) -- LstV(2) shouldBe LstV(1,3)
-    LstV(1,2,3) - 2 shouldBe LstV(1,3)
-    LstV(1,2,3).contains(2) shouldBe true
-    LstV(1,2,3).contains(4) shouldBe false
+    Lst.from(1,2,3) ++ Lst.from(4,5) shouldBe Lst.from(1,2,3,4,5)
+    Lst.from(1,2,3) + 4 shouldBe Lst.from(1,2,3,4)
+    Lst.from(1,2,3) -- Lst.from(2) shouldBe Lst.from(1,3)
+    Lst.from(1,2,3) - 2 shouldBe Lst.from(1,3)
+    Lst.from(1,2,3).contains(2) shouldBe true
+    Lst.from(1,2,3).contains(4) shouldBe false
   }
 
   "Obj operators " should "work" in {
-    ObjV("a" → 1).contains("a") shouldBe true
-    ObjV("a" → 1).contains("b") shouldBe false
+    Obj.from("a" → 1).contains("a") shouldBe true
+    Obj.from("a" → 1).contains("b") shouldBe false
   }
 
   "Bool operators " should "work" in {

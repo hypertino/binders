@@ -1,4 +1,4 @@
-import com.hypertino.binders.value.{Lst, Null, ObjV}
+import com.hypertino.binders.value.{Lst, Null, Obj}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}
 
@@ -34,7 +34,7 @@ class TestCustomCanBuildFromSpec extends FlatSpec with Matchers with MockFactory
   }
 
   "custom CanBuildFrom[] " should " have default empty value" in {
-    val obj = ObjV("a" → Null)
+    val obj = Obj.from("a" → Null)
     val customHolder = obj.to[CustomCollHolder]
     customHolder shouldBe a [CustomCollHolder]
     customHolder.a shouldBe a[CustomColl[_]]
