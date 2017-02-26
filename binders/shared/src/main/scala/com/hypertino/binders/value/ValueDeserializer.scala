@@ -7,7 +7,7 @@ import scala.language.experimental.macros
 
 class ValueDeserializeException(message: String) extends RuntimeException(message)
 
-class ValueDeserializerBase[C <: Converter, I <: Deserializer[C]] (value: Value, val fieldName: Option[String])
+abstract class ValueDeserializerBase[C <: Converter, I <: Deserializer[C]] (value: Value, val fieldName: Option[String])
   extends Deserializer[C] {
 
   def iterator(): Iterator[I] = {
@@ -19,7 +19,7 @@ class ValueDeserializerBase[C <: Converter, I <: Deserializer[C]] (value: Value,
     }
   }
 
-  protected def createFieldDeserializer(value: Value, fieldName: Option[String]): I = ???
+  protected def createFieldDeserializer(value: Value, fieldName: Option[String]): I
 
   def isNull: Boolean = value == null || value == Null
   def readString(): String = value.toString

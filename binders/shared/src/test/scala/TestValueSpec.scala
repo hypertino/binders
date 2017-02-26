@@ -269,6 +269,14 @@ class TestValueSpec extends FlatSpec with Matchers {
     False | 1 shouldBe True
   }
 
+  "Annotated fields " should " preserve name" in {
+    val p = TestProductAnnotated(576, 90)
+    val v = p.toValue
+    v.f1Value should equal(Number(576))
+    v.f2Value should equal(Number(90))
+    val p2 = v.to[TestProductAnnotated]
+    p2 should equal(p)
+  }
 
   def toValueNumberPair(kv: (String, Int)) = {
     (kv._1, Number(kv._2))
