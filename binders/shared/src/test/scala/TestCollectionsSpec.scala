@@ -17,7 +17,7 @@ class TestCollectionsSpec extends FlatSpec with Matchers with MockFactory {
         mi
       }
     }
-    m.iterator _ expects() returning mi.toIterator
+    m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning mi.toIterator
     m
   }
 

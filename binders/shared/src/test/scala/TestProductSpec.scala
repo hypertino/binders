@@ -154,7 +154,7 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     m3.readInt _ expects () returning 7890
 
     val mi = List(m1,m2,m3)
-    m.iterator _ expects () returning mi.toIterator
+    m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning mi.toIterator
 
     val t = m.unbind[TestProduct]
     t shouldBe TestProduct(123456, Some(555), 7890)
@@ -176,7 +176,7 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     m3.readInt _ expects () returning 7890
 
     val mi = List(m1,m2,m3)
-    m.iterator _ expects () returning mi.toIterator
+    m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning mi.toIterator
 
     val t = m.unbind[TestProduct]
     t shouldBe TestProduct(123456, Some(555), 7890)
@@ -194,7 +194,7 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     m3.readInt _ expects () returning 7890
 
     val mi = List(m1,m3)
-    m.iterator _ expects () returning mi.toIterator
+    m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning mi.toIterator
 
     val t = m.unbindPartial(TestProduct(-1, Some(555), -2))
     t shouldBe TestProduct(123456, Some(555), 7890)
@@ -217,7 +217,7 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
 
     val mf1 = mock[TestDeserializer[PlainConverter.type]]
     mf1.fieldName _ expects () returning Some("inner")
-    mf1.iterator _ expects () returning mi.toIterator
+    mf1.iterator _ expects com.hypertino.binders.core.BindOptions.get returning mi.toIterator
 
     val mn = mock[TestDeserializer[PlainConverter.type]]
     mn.fieldName _ expects () returning Some("nullableInner")
@@ -226,11 +226,11 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val mf2 = mock[TestDeserializer[PlainConverter.type]]
     mf2.fieldName _ expects () returning Some("nullableInner1")
     mf2.isNull _ expects () returning false
-    mf2.iterator _ expects () returning mi.toIterator
+    mf2.iterator _ expects com.hypertino.binders.core.BindOptions.get returning mi.toIterator
 
     val mo = mock[TestDeserializer[PlainConverter.type]]
     val moi = List(mf1,mn,mf2)
-    mo.iterator _ expects () returning moi.toIterator
+    mo.iterator _ expects com.hypertino.binders.core.BindOptions.get returning moi.toIterator
 
     val t = mo.unbind[TestInnerProduct]
     t shouldBe TestInnerProduct(
@@ -303,7 +303,7 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     m2.readString _ expects () returning "abc"
 
     val mi = List(m1,m2)
-    m.iterator _ expects () returning mi.toIterator
+    m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning mi.toIterator
 
     val t = m.unbind[TestTrait]
     t.intValue shouldBe 123456

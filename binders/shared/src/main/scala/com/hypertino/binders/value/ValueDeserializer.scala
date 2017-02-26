@@ -1,6 +1,6 @@
 package com.hypertino.binders.value
 
-import com.hypertino.binders.core.Deserializer
+import com.hypertino.binders.core.{BindOptions, Deserializer}
 import com.hypertino.inflector.naming.Converter
 
 import scala.language.experimental.macros
@@ -10,10 +10,16 @@ class ValueDeserializeException(message: String) extends RuntimeException(messag
 abstract class ValueDeserializerBase[C <: Converter, I <: Deserializer[C]] (value: Value, val fieldName: Option[String])
   extends Deserializer[C] {
 
-  def iterator(): Iterator[I] = {
+  def iterator(bindOptions: BindOptions): Iterator[I] = {
     value match {
-      case s:Lst => s.v.toIterator.map(createFieldDeserializer(_, None))
-      case m:Obj => m.v.toIterator.map(kv => createFieldDeserializer(kv._2, Some(kv._1)))
+      case list: Lst => list.v
+        .toIterator
+        .filterNot(bindOptions.skipOptionalFields && _.isEmpty)
+        .map(createFieldDeserializer(_, None))
+      case obj:Obj => obj.v
+        .toIterator
+        .filterNot(bindOptions.skipOptionalFields && _._2.isEmpty)
+        .map(kv => createFieldDeserializer(kv._2, Some(kv._1)))
       case Null ⇒ Iterator.empty
       case _ => throw new ValueDeserializeException("Couldn't iterate on: " + value)
     }

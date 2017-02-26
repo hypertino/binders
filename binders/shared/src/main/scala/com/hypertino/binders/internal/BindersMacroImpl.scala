@@ -308,7 +308,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     val elTpe = extractTypeArgs(tpe).head
     val q = q"""{
       val $dserOps = ${ctx.prefix.tree}
-      ${convertIterator(tpe, q"$dserOps.deserializer.iterator().map(_.unbind[$elTpe])")}
+      ${convertIterator(tpe, q"$dserOps.deserializer.iterator(com.hypertino.binders.core.BindOptions.get).map(_.unbind[$elTpe])")}
     }"""
     //println(q)
     q
@@ -378,7 +378,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
       val $dserOps = ${ctx.prefix.tree}
       ${if (partial) { q"val $orig = $originalValue" } else q""}
       ..${vars.map(_._1)}
-      $dserOps.deserializer.iterator().foreach{case $i =>
+      $dserOps.deserializer.iterator(com.hypertino.binders.core.BindOptions.get).foreach{case $i =>
         $i.fieldName.map {
           case ..${vars.map(_._2)}
           case _ => { /*todo: implement smart deserialization*/ }
@@ -402,7 +402,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     val elTpe = extractTypeArgs(tpe).tail.head
     val block = q"""{
       val $dserOps = ${ctx.prefix.tree}
-      $dserOps.deserializer.iterator().map{ case $el =>
+      $dserOps.deserializer.iterator(com.hypertino.binders.core.BindOptions.get).map{ case $el =>
         ($el.fieldName.get, $el.unbind[$elTpe])
       }.toMap
     }"""

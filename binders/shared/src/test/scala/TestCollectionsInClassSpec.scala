@@ -98,12 +98,12 @@ class TestCollectionsInClassSpec extends FlatSpec with Matchers with MockFactory
         me
       }
 
-      m1.iterator _ expects () returning miIter
+      m1.iterator _ expects com.hypertino.binders.core.BindOptions.get returning miIter
     }
 
     inSequence {
       val mci = List(m1)
-      m.iterator _ expects () returning mci.toIterator
+      m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning mci.toIterator
     }
 
     val t = m.unbind[TestStringCollections]
@@ -112,7 +112,7 @@ class TestCollectionsInClassSpec extends FlatSpec with Matchers with MockFactory
 
   "empty List in case class " should " be deserialized by names " in {
     val m = mock[TestDeserializer[PlainConverter.type]]
-    m.iterator _ expects () returning Iterator.empty
+    m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning Iterator.empty
 
     val t = m.unbind[TestStringListCls]
     t shouldBe TestStringListCls(List.empty)
@@ -120,7 +120,7 @@ class TestCollectionsInClassSpec extends FlatSpec with Matchers with MockFactory
 
   "empty Vector in case class " should " be deserialized by names " in {
     val m = mock[TestDeserializer[PlainConverter.type]]
-    m.iterator _ expects () returning Iterator.empty
+    m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning Iterator.empty
 
     val t = m.unbind[TestStringVectorCls]
     t shouldBe TestStringVectorCls(Vector.empty)
@@ -128,7 +128,7 @@ class TestCollectionsInClassSpec extends FlatSpec with Matchers with MockFactory
 
   "empty IndexedSeq in case class " should " be deserialized by names " in {
     val m = mock[TestDeserializer[PlainConverter.type]]
-    m.iterator _ expects () returning Iterator.empty
+    m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning Iterator.empty
 
     val t = m.unbind[TestStringIndexedSeqCls]
     t shouldBe TestStringIndexedSeqCls(IndexedSeq.empty)
@@ -136,7 +136,7 @@ class TestCollectionsInClassSpec extends FlatSpec with Matchers with MockFactory
 
   "empty Set in case class " should " be deserialized by names " in {
     val m = mock[TestDeserializer[PlainConverter.type]]
-    m.iterator _ expects () returning Iterator.empty
+    m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning Iterator.empty
 
     val t = m.unbind[TestStringSetCls]
     t shouldBe TestStringSetCls(Set.empty)
@@ -144,7 +144,7 @@ class TestCollectionsInClassSpec extends FlatSpec with Matchers with MockFactory
 
   "empty Array in case class " should " be deserialized by names " in {
     val m = mock[TestDeserializer[PlainConverter.type]]
-    m.iterator _ expects () returning Iterator.empty
+    m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning Iterator.empty
 
     val t = m.unbind[TestArrayCls]
     t.array.length shouldBe 0

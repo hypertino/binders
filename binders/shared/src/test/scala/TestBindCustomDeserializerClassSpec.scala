@@ -1,4 +1,4 @@
-import com.hypertino.binders.core.{Deserializer, Serializer}
+import com.hypertino.binders.core.{BindOptions, Deserializer, Serializer}
 import com.hypertino.binders.value.Value
 import com.hypertino.inflector.naming.{Converter, PlainConverter}
 import org.scalamock.scalatest.MockFactory
@@ -6,7 +6,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 trait TestCustomDeserializer[C <: Converter] extends Deserializer[C] {
   def readCustom(): Custom
-  def iterator(): Iterator[TestCustomDeserializer[C]]
+  def iterator(bindOptions: BindOptions): Iterator[TestCustomDeserializer[C]]
 }
 
 trait TestCustomSerializer[C <: Converter] extends Serializer[C] {
