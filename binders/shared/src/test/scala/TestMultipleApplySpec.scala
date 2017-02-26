@@ -43,7 +43,7 @@ class TestMultipleApplySpec extends FlatSpec with Matchers with MockFactory {
 
     inSequence{
       val mi = List(m1, m2)
-      m.iterator _ expects com.hypertino.binders.core.BindOptions.get returning mi.toIterator
+      m.iterator _ expects () returning mi.toIterator
     }
 
     val t = m.unbind[MultipleApply]

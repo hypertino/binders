@@ -25,7 +25,7 @@ class TestUnbindDefaultSpec extends FlatSpec with Matchers with MockFactory {
   }
   inSequence{
     val mi = List(m2, m3, m4)
-    m1.iterator _ expects com.hypertino.binders.core.BindOptions.get returning mi.toIterator
+    m1.iterator _ expects () returning mi.toIterator
   }
 
   val t = m1.unbind[TestDefault]

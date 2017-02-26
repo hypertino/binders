@@ -10,15 +10,15 @@ class ValueDeserializeException(message: String) extends RuntimeException(messag
 abstract class ValueDeserializerBase[C <: Converter, I <: Deserializer[C]] (value: Value, val fieldName: Option[String])
   extends Deserializer[C] {
 
-  def iterator(bindOptions: BindOptions): Iterator[I] = {
+  protected def bindOptions: BindOptions
+
+  def iterator(): Iterator[I] = {
     value match {
       case list: Lst => list.v
         .toIterator
-        .filterNot(bindOptions.skipOptionalFields && _.isEmpty)
         .map(createFieldDeserializer(_, None))
       case obj:Obj => obj.v
         .toIterator
-        .filterNot(bindOptions.skipOptionalFields && _._2.isEmpty)
         .map(kv => createFieldDeserializer(kv._2, Some(kv._1)))
       case Null ⇒ Iterator.empty
       case _ => throw new ValueDeserializeException("Couldn't iterate on: " + value)
@@ -39,6 +39,7 @@ abstract class ValueDeserializerBase[C <: Converter, I <: Deserializer[C]] (valu
 }
 
 class ValueDeserializer[C <: Converter] (value: Value, override val fieldName: Option[String] = None)
+                                        (implicit protected val bindOptions: BindOptions)
   extends ValueDeserializerBase[C, ValueDeserializer[C]](value, fieldName) {
 
   protected override def createFieldDeserializer(value: Value, fieldName: Option[String]): ValueDeserializer[C]

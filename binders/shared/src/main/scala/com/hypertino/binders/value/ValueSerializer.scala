@@ -2,7 +2,7 @@ package com.hypertino.binders.value
 
 import java.util.Date
 
-import com.hypertino.binders.core.Serializer
+import com.hypertino.binders.core.{BindOptions, Serializer}
 import com.hypertino.inflector.naming.Converter
 
 import scala.language.experimental.macros
@@ -17,6 +17,8 @@ abstract class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait
   protected var value: Value = _
   protected var map: scala.collection.mutable.Map[String, ValueSerializerBaseTrait[C]] = _
   protected var seq: scala.collection.mutable.ArrayBuffer[Value] = _
+
+  protected def bindOptions: BindOptions
 
   def getFieldSerializer(fieldName: String): Option[F] = {
     if (map == null) {
@@ -69,6 +71,7 @@ abstract class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait
   def result: Value = value
 }
 
-class ValueSerializer[C <: Converter] extends ValueSerializerBase[C, ValueSerializer[C]]{
+class ValueSerializer[C <: Converter] (implicit protected val bindOptions: BindOptions)
+  extends ValueSerializerBase[C, ValueSerializer[C]]{
   protected override def createFieldSerializer(): ValueSerializer[C] = new ValueSerializer[C]()
 }

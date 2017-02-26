@@ -23,7 +23,7 @@ trait TestDeserializer[C <: Converter] extends Deserializer[C] {
 
   def readValue(): Value
 
-  def iterator(bindOptions: BindOptions): Iterator[TestDeserializer[C]]
+  def iterator(): Iterator[TestDeserializer[C]]
 }
 
 trait TestDeserializerWithGenerics[C <: Converter] extends Deserializer[C] {
@@ -45,13 +45,13 @@ trait TestDeserializerWithGenerics[C <: Converter] extends Deserializer[C] {
 
   def readGenericWihBounds[T <: TestGeneric](): T
 
-  def iterator(bindOptions: BindOptions): Iterator[TestDeserializerWithGenerics[C]]
+  def iterator(): Iterator[TestDeserializerWithGenerics[C]]
 }
 
 trait TestDeserializerWithList[C <: Converter] extends Deserializer[C] {
   def readList[T: ClassTag](): List[T] = ???
 
-  def iterator(bindOptions: BindOptions): Iterator[TestDeserializer[C]]
+  def iterator(): Iterator[TestDeserializer[C]]
 }
 
 trait TestSerializer[C <: Converter] extends Serializer[C] {
