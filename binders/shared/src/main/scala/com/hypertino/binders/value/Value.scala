@@ -167,28 +167,37 @@ case class Text(v: String) extends AnyVal with Value {
 case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value{
   override def ~~[T](visitor: ValueVisitor[T]): T = visitor.visitObj(this)
 
-  override def +(other: Value): Value = {
+  override def +(other: Value): Obj = {
     other match {
       case o: Obj ⇒
-        Obj(v ++ o.v.map {
-          case (k, otherV) => k -> v.get(k).map { originalV ⇒
-            if (originalV.isInstanceOf[Obj]) {
-              originalV.+(otherV)
-            }
-            else {
-              otherV
-            }
-          }.getOrElse {
-            otherV
-          }
-        })
+        this.+(o.v.toSeq)
       case _ ⇒
-        super.+(other)
+        throw new UnsupportedOperationException(s"$this + $other")
     }
   }
 
-  override def -(other: Value): Value = {
-    Obj(v.filterNot(kv ⇒ other.toMap.contains(kv._1)))
+  override def -(other: Value): Obj = {
+    other match {
+      case o: Obj ⇒
+        Obj(v.filterNot(kv ⇒ other.toMap.contains(kv._1)))
+      case _ ⇒
+        Obj(v.filterNot(_ == other))
+    }
+  }
+
+  def + (other: Seq[(String,Value)]): Obj = {
+    Obj(v ++ other.map {
+      case (k, otherV) => k -> v.get(k).map { originalV ⇒
+        if (originalV.isInstanceOf[Obj]) {
+          originalV.+(otherV)
+        }
+        else {
+          otherV
+        }
+      }.getOrElse {
+        otherV
+      }
+    })
   }
 
   override def contains(other: Value): Boolean = v.contains(other.toString)
@@ -211,22 +220,22 @@ object Obj {
 case class Lst(v: Seq[Value]) extends AnyVal with Value{
   override def ~~[T](visitor: ValueVisitor[T]): T = visitor.visitLst(this)
 
-  override def +(other: Value): Value = v :+ other
-  override def -(other: Value): Value = {
+  override def +(other: Value): Lst = v :+ other
+  override def -(other: Value): Lst = {
     v.diff(Seq(other))
   }
 
-  override def ++(other: Value): Value = {
+  override def ++(other: Value): Lst = {
     other match {
       case Lst(seqOther) ⇒ v ++ seqOther
-      case _ ⇒ super.++(other)
+      case _ ⇒ throw new UnsupportedOperationException(s"$this ++ $other")
     }
   }
 
-  override def --(other: Value): Value = {
+  override def --(other: Value): Lst = {
     other match {
       case Lst(seqOther) ⇒ v diff seqOther
-      case _ ⇒ super.--(other)
+      case _ ⇒ throw new UnsupportedOperationException(s"$this ++ $other")
     }
   }
 
