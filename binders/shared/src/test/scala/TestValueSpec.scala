@@ -246,6 +246,10 @@ class TestValueSpec extends FlatSpec with Matchers {
   }
 
   "Obj operators " should "work" in {
+    Obj.from("a" → 1) + Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 2)
+    Obj.from("a" → 1, "b" → 3) + Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 2)
+    Obj.from("a" → 1, "b" → 2) - "b" shouldBe Obj.from("a" → 1)
+    Obj.from("a" → 1, "b" → 2) - Obj.from("b" → 2) shouldBe Obj.from("a" → 1)
     Obj.from("a" → 1).contains("a") shouldBe true
     Obj.from("a" → 1).contains("b") shouldBe false
   }

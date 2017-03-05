@@ -181,7 +181,7 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
       case o: Obj ⇒
         Obj(v.filterNot(kv ⇒ other.toMap.contains(kv._1)))
       case _ ⇒
-        Obj(v.filterNot(_ == other))
+        Obj(v.filterNot(_._1 == other.toString))
     }
   }
 
