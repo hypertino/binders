@@ -48,6 +48,7 @@ sealed trait Value extends Any with Dynamic {
   def contains(other: Value): Boolean = throw new UnsupportedOperationException(s"$this contains $other")
   def unary_! : Value = throw new UnsupportedOperationException(s"!$this")
   def unary_- : Value = throw new UnsupportedOperationException(s"-$this")
+  def apply(other: Value): Value = throw new UnsupportedOperationException(s"$this.apply($other)")
 
   def selectDynamic(name: String): Value = {
     toMap.getOrElse(
@@ -85,6 +86,7 @@ case object Null extends Value {
   override def contains(other: Value): Boolean = false
   override def unary_! : Value = Null
   override def unary_- : Value = Null
+  override def apply(other: Value): Value = Null
 }
 
 case class Number(v: BigDecimal) extends AnyVal with Value {
@@ -201,6 +203,19 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
   }
 
   override def contains(other: Value): Boolean = v.contains(other.toString)
+
+  override def apply(other: Value): Value = {
+    other match {
+      case Text(path) ⇒
+        Obj.extractValue(this, path.split('.'))
+
+      case Lst(elements) ⇒
+        Obj.extractValue(this, elements.map(_.toString))
+
+      case _ ⇒
+        throw new UnsupportedOperationException(s"$this.apply($other)")
+    }
+  }
 }
 
 object Obj {
@@ -214,6 +229,23 @@ object Obj {
       Obj.empty
     else
       new Obj(scala.collection.mutable.LinkedHashMap(v: _*))
+  }
+
+  def extractValue(o: Obj, path: Seq[String]): Value = {
+    if (path.tail.isEmpty) {
+      o.v.get(path.head) match {
+        case Some(v) ⇒ v
+        case None ⇒ Null
+      }
+    }
+    else {
+      o.v(path.head) match {
+        case child: Obj ⇒
+          extractValue(child, path.tail)
+        case _ ⇒
+          Null
+      }
+    }
   }
 }
 
@@ -240,6 +272,11 @@ case class Lst(v: Seq[Value]) extends AnyVal with Value{
   }
 
   override def contains(other: Value): Boolean = v.contains(other)
+
+  override def apply(other: Value): Value = {
+    val index = other.toInt
+    v(index)
+  }
 }
 
 object Lst {

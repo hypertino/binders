@@ -146,6 +146,14 @@ class TestValueSpec extends FlatSpec with Matchers {
     }
   }
 
+  "Obj " should " return inner fields" in {
+    val value1 = Obj.from("a" -> 1, "b" -> "ho", "c" -> true, "d" → 5, "e" → Obj.from("x" → 100500))
+
+    value1("a") should equal(Number(1))
+    value1("e.x") should equal(Number(100500))
+    value1(Lst.from("e","x")) should equal(Number(100500))
+  }
+
   "implicits" should "do conversion" in {
     val obj = Obj.from("a" → 5, "b" → "18")
     obj should equal(Obj(Map("a"→Number(5), "b"→Text("18"))))
@@ -243,6 +251,13 @@ class TestValueSpec extends FlatSpec with Matchers {
     Lst.from(1,2,3) - 2 shouldBe Lst.from(1,3)
     Lst.from(1,2,3).contains(2) shouldBe true
     Lst.from(1,2,3).contains(4) shouldBe false
+  }
+
+  "Lst " should " return by index" in {
+    val value1 = Lst.from(12,22,32)
+
+    value1("1") should equal(Number(22))
+    value1(2) should equal(Number(32))
   }
 
   "Obj operators " should "work" in {
