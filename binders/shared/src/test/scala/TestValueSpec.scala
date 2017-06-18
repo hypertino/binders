@@ -246,6 +246,9 @@ class TestValueSpec extends FlatSpec with Matchers {
 
   "Lst operators " should "work" in {
     Lst.from(1,2,3) ++ Lst.from(4,5) shouldBe Lst.from(1,2,3,4,5)
+    Lst.from(1,2,3) ++ Null shouldBe Lst.from(1,2,3)
+    Null ++ Lst.from(1,2,3) shouldBe Lst.from(1,2,3)
+    Null -- Lst.from(1,2,3) shouldBe Null
     Lst.from(1,2,3) + 4 shouldBe Lst.from(1,2,3,4)
     Lst.from(1,2,3) -- Lst.from(2) shouldBe Lst.from(1,3)
     Lst.from(1,2,3) - 2 shouldBe Lst.from(1,3)
@@ -262,6 +265,10 @@ class TestValueSpec extends FlatSpec with Matchers {
 
   "Obj operators " should "work" in {
     Obj.from("a" → 1) + Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 2)
+    Obj.from("a" → 1) + Null shouldBe Obj.from("a" → 1)
+    Null + Obj.from("a" → 1) shouldBe Obj.from("a" → 1)
+    Obj.from("a" → 1) - Null shouldBe Obj.from("a" → 1)
+    Null - Obj.from("a" → 1) shouldBe Null
     Obj.from("a" → 1, "b" → 3) + Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 2)
     Obj.from("a" → 1, "b" → 2) - "b" shouldBe Obj.from("a" → 1)
     Obj.from("a" → 1, "b" → 2) - Obj.from("b" → 2) shouldBe Obj.from("a" → 1)

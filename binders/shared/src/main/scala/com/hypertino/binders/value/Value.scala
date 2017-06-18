@@ -31,6 +31,8 @@ sealed trait Value extends Any with Dynamic {
 
   def isEmpty: Boolean = this ~~ Visitors.isEmptyVisitor
 
+  def nonEmpty: Boolean = !isEmpty
+
   def +(other: Value): Value = throw new UnsupportedOperationException(s"$this + $other")
   def -(other: Value): Value = throw new UnsupportedOperationException(s"$this - $other")
   def ++(other: Value): Value = throw new UnsupportedOperationException(s"$this ++ $other")
@@ -74,7 +76,15 @@ trait ValueVisitor[T] {
 case object Null extends Value {
   override def ~~[T](visitor: ValueVisitor[T]): T = visitor.visitNull()
 
-  override def +(other: Value): Value = Null
+  override def +(other: Value): Value = other match {
+    case obj: Obj ⇒ obj
+    case _ ⇒ Null
+  }
+  override def ++(other: Value): Value = other match {
+    case lst: Lst ⇒ lst
+    case _ ⇒ Null
+  }
+  override def --(other: Value): Value = Null
   override def -(other: Value): Value = Null
   override def *(other: Value): Value = Null
   override def /(other: Value): Value = Null
@@ -173,6 +183,8 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
     other match {
       case o: Obj ⇒
         this.+(o.v.toSeq)
+      case Null ⇒
+        this
       case _ ⇒
         throw new UnsupportedOperationException(s"$this + $other")
     }
@@ -182,6 +194,8 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
     other match {
       case o: Obj ⇒
         Obj(v.filterNot(kv ⇒ other.toMap.contains(kv._1)))
+      case Null ⇒
+        this
       case _ ⇒
         Obj(v.filterNot(_._1 == other.toString))
     }
@@ -260,6 +274,7 @@ case class Lst(v: Seq[Value]) extends AnyVal with Value{
   override def ++(other: Value): Lst = {
     other match {
       case Lst(seqOther) ⇒ v ++ seqOther
+      case Null ⇒ this
       case _ ⇒ throw new UnsupportedOperationException(s"$this ++ $other")
     }
   }
@@ -267,6 +282,7 @@ case class Lst(v: Seq[Value]) extends AnyVal with Value{
   override def --(other: Value): Lst = {
     other match {
       case Lst(seqOther) ⇒ v diff seqOther
+      case Null ⇒ this
       case _ ⇒ throw new UnsupportedOperationException(s"$this ++ $other")
     }
   }
