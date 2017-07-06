@@ -274,6 +274,9 @@ class TestValueSpec extends FlatSpec with Matchers {
     Obj.from("a" → 1, "b" → 2) - Obj.from("b" → 2) shouldBe Obj.from("a" → 1)
     Obj.from("a" → 1).contains("a") shouldBe true
     Obj.from("a" → 1).contains("b") shouldBe false
+    Obj.from("a" → Some(1)).contains("a") shouldBe true
+    val o: Option[String] = None
+    Obj.from("a" → o).contains("a") shouldBe true
   }
 
   "Bool operators " should "work" in {
