@@ -9,7 +9,7 @@ lazy val binders = crossProject.settings(publishSettings:_*).settings(
     version := "1.0-SNAPSHOT",
     scalaVersion := "2.12.1",
     libraryDependencies ++= Seq(
-      "com.hypertino" %%% "inflector" % "1.0.1",
+      "com.hypertino" %%% "inflector" % "1.0.4",
       "org.scalamock" %%% "scalamock-scalatest-support" % "3.5.0" % "test",
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
     ) ++ {
