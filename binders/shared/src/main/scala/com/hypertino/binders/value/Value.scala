@@ -193,9 +193,13 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
   override def -(other: Value): Obj = {
     other match {
       case o: Obj ⇒
-        Obj(v.filterNot(kv ⇒ other.toMap.contains(kv._1)))
+        this.-(o.v.toSeq)
       case Null ⇒
         this
+      case Lst(lst) ⇒ {
+        val set = lst.toSet
+        Obj(v.filterNot(el ⇒ set.contains(el._1)))
+      }
       case _ ⇒
         Obj(v.filterNot(_._1 == other.toString))
     }
@@ -212,6 +216,27 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
         }
       }.getOrElse {
         otherV
+      }
+    })
+  }
+
+  def - (other: Seq[(String,Value)]): Obj = {
+    Obj(v ++ other.flatMap {
+      case (k, otherV) => v.get(k).flatMap { originalV ⇒
+        (originalV, otherV) match {
+          case (_: Obj, _: Obj | _: Lst) ⇒ Some(k -> originalV.-(otherV))
+          case (_, Null) ⇒ Some(k -> originalV)
+          case (_: Lst, _) ⇒ Some(k -> originalV.-(otherV))
+          case (_: Obj, _: Bool | _: Number | _: Text) ⇒ Some(k → originalV.-(otherV))
+          case _ ⇒ None
+        }
+      }
+    } -- other.flatMap {
+      case (k, otherV) => v.get(k).flatMap { originalV ⇒
+        (originalV, otherV) match {
+          case (_: Bool | _: Number | _: Text, _) ⇒ Some(k)
+          case _ ⇒ None
+        }
       }
     })
   }

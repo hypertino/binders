@@ -127,11 +127,26 @@ class TestValueSpec extends FlatSpec with Matchers {
     value3 should equal(Obj.from("a" -> 2, "b" -> "no", "c" -> false, "d" → Null, "e" → Text("kl")))
   }
 
+  "Obj " should " merge (+) inner fields" in {
+    val value1 = Obj.from("a" -> Obj.from("x" → 1, "y" → "yey"))
+    val value2 = Obj.from("a" -> Obj.from("z" → "hey"))
+    val value3 = value1 + value2
+    value3 shouldBe Obj.from("a" -> Obj.from("x" → 1, "y" → "yey", "z" → "hey"))
+  }
+
   "Obj " should " subtract (-) " in {
     val value1 = Obj.from("a" -> 1, "b" -> "ho", "c" -> true, "d" → 5, "e" → "kl")
-    val value2 = Obj.from("a" -> Null, "d" → 8)
+    val value2 = Obj.from("a" -> 1, "d" → 8)
     val value3 = value1 - value2
     value3 should equal(Obj.from("b" -> "ho", "c" -> true, "e" → Text("kl")))
+  }
+
+
+  "Obj " should " subtract (-) inner fields" in {
+    val value1 = Obj.from("a" -> Obj.from("x" → 1, "z" → "hey", "y" → "yey"))
+    val value2 = Obj.from("a" -> Obj.from("z" → "hey"))
+    val value3 = value1 - value2
+    value3 shouldBe Obj.from("a" -> Obj.from("x" → 1, "y" → "yey"))
   }
 
   "Obj " should " preserve order of fields " in {
