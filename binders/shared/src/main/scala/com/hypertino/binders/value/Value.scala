@@ -253,8 +253,8 @@ object Obj {
       }
     }
     else {
-      o.v(path.head) match {
-        case child: Obj ⇒
+      o.v.get(path.head) match {
+        case Some(child: Obj) ⇒
           extractValue(child, path.tail)
         case _ ⇒
           Null

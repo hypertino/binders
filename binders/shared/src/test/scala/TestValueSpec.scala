@@ -152,6 +152,8 @@ class TestValueSpec extends FlatSpec with Matchers {
     value1("a") should equal(Number(1))
     value1("e.x") should equal(Number(100500))
     value1(Lst.from("e","x")) should equal(Number(100500))
+    value1("e.x.z") should equal(Null)
+    value1(Lst.from("e","x","z")) should equal(Null)
   }
 
   "implicits" should "do conversion" in {
