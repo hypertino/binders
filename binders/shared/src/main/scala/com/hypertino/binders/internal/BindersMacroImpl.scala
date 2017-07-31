@@ -381,7 +381,10 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
       $dserOps.deserializer.iterator().foreach{case $i =>
         $i.fieldName.map {
           case ..${vars.map(_._2)}
-          case _ => { /*todo: implement smart deserialization*/ }
+          case other => {
+            ${callIfExists[D](q"$i", "consume")}
+           /*todo: implement smart deserialization*/
+          }
         } getOrElse {
           throw new com.hypertino.binders.core.BindersException("Can't deserialize object: iterator didn't return fieldName")
         }
@@ -600,7 +603,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     ).map(_.asInstanceOf[MethodSymbol]).headOption.map { m =>
       q"$o.${TermName(methodName)}()"
     } getOrElse {
-      q""
+      q"{}"
     }
   }
 

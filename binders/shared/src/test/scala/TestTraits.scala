@@ -24,6 +24,8 @@ trait TestDeserializer[C <: Converter] extends Deserializer[C] {
   def readValue(): Value
 
   def iterator(): Iterator[TestDeserializer[C]]
+
+  def consume(): Unit
 }
 
 trait TestDeserializerWithGenerics[C <: Converter] extends Deserializer[C] {

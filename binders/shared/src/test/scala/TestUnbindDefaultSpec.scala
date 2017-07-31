@@ -14,17 +14,20 @@ class TestUnbindDefaultSpec extends FlatSpec with Matchers with MockFactory {
   val m2 = mock[TestDeserializer[PlainConverter.type]]
   val m3 = mock[TestDeserializer[PlainConverter.type]]
   val m4 = mock[TestDeserializer[PlainConverter.type]]
+  val m5 = mock[TestDeserializer[PlainConverter.type]]
 
   inSequence {
     m2.fieldName _ expects() returning Some("intValue")
     m2.readIntNullable _ expects() returning None
-    m3.fieldName _ expects() returning Some("stringValue")
-    m3.readStringNullable _ expects() returning None
-    m4.fieldName _ expects() returning Some("longValue")
-    m4.isNull _ expects() returning true
+    m3.fieldName _ expects() returning Some("nonExistingField")
+    m3.consume _ expects() returning Unit
+    m4.fieldName _ expects() returning Some("stringValue")
+    m4.readStringNullable _ expects() returning None
+    m5.fieldName _ expects() returning Some("longValue")
+    m5.isNull _ expects() returning true
   }
   inSequence{
-    val mi = List(m2, m3, m4)
+    val mi = List(m2, m3, m4, m5)
     m1.iterator _ expects () returning mi.toIterator
   }
 
