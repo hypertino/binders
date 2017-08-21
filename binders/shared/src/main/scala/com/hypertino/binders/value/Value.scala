@@ -244,16 +244,7 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
   override def contains(other: Value): Boolean = v.contains(other.toString)
 
   override def apply(other: Value): Value = {
-    other match {
-      case Text(path) ⇒
-        Obj.extractValue(this, path.split('.'))
-
-      case Lst(elements) ⇒
-        Obj.extractValue(this, elements.map(_.toString))
-
-      case _ ⇒
-        throw new UnsupportedOperationException(s"$this.apply($other)")
-    }
+    Obj.extractValue(this, Obj.splitPath(other))
   }
 }
 
@@ -283,6 +274,36 @@ object Obj {
           extractValue(child, path.tail)
         case _ ⇒
           Null
+      }
+    }
+  }
+
+  def splitPath(other: Value): Seq[String] = {
+    other match {
+      case Text(path) ⇒
+        path.split('.')
+
+      case Lst(elements) ⇒
+        elements.map(_.toString)
+
+      case _ ⇒
+        throw new UnsupportedOperationException(s"Obj.splitPath($other)")
+    }
+  }
+
+  def hasPath(o: Obj, path: Seq[String]): Boolean = {
+    if (path.tail.isEmpty) {
+      o.v.get(path.head) match {
+        case Some(v) ⇒ true
+        case None ⇒ false
+      }
+    }
+    else {
+      o.v.get(path.head) match {
+        case Some(child: Obj) ⇒
+          hasPath(child, path.tail)
+        case _ ⇒
+          false
       }
     }
   }

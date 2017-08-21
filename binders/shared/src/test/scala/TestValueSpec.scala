@@ -169,6 +169,9 @@ class TestValueSpec extends FlatSpec with Matchers {
     value1(Lst.from("e","x")) should equal(Number(100500))
     value1("e.x.z") should equal(Null)
     value1(Lst.from("e","x","z")) should equal(Null)
+
+    Obj.hasPath(value1, Obj.splitPath("e.x")) shouldBe true
+    Obj.hasPath(value1, Obj.splitPath("e.y")) shouldBe false
   }
 
   "implicits" should "do conversion" in {
