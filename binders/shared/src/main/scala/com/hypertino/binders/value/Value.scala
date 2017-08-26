@@ -400,9 +400,9 @@ private [value] object Visitors {
   val toStringVisitor = new ValueVisitor[String] {
     override def visitBool(d: Bool) = d.v.toString
     override def visitText(d: Text) = d.v
-    override def visitObj(d: Obj) = d.v.map(kv => kv._1 + "->" + kv._2).mkString(",")
+    override def visitObj(d: Obj) = d.v.map(kv => kv._1 + "->" + kv._2).mkString("{", ",", "}")
     override def visitNumber(d: Number) = d.v.toString()
-    override def visitLst(d: Lst) = d.v.mkString(",")
+    override def visitLst(d: Lst) = d.v.mkString("[", ",", "]")
     override def visitNull(): String = ""
   }
 
