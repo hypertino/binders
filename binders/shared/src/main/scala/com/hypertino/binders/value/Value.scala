@@ -80,6 +80,10 @@ case object Null extends Value {
     case obj: Obj ⇒ obj
     case _ ⇒ Null
   }
+  override def %(other: Value): Value = other match {
+    case obj: Obj ⇒ obj
+    case _ ⇒ Null
+  }
   override def ++(other: Value): Value = other match {
     case lst: Lst ⇒ lst
     case _ ⇒ Null
@@ -88,7 +92,6 @@ case object Null extends Value {
   override def -(other: Value): Value = Null
   override def *(other: Value): Value = Null
   override def /(other: Value): Value = Null
-  override def %(other: Value): Value = Null
   override def >(other: Value): Boolean = false
   override def <(other: Value): Boolean = false
   override def >=(other: Value): Boolean = other == Null
@@ -179,6 +182,17 @@ case class Text(v: String) extends AnyVal with Value {
 case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value{
   override def ~~[T](visitor: ValueVisitor[T]): T = visitor.visitObj(this)
 
+  override def %(other: Value): Obj = {
+    other match {
+      case o: Obj ⇒
+        this.%(o.v.toSeq)
+      case Null ⇒
+        Obj.empty
+      case _ ⇒
+        throw new UnsupportedOperationException(s"$this + $other")
+    }
+  }
+
   override def +(other: Value): Obj = {
     other match {
       case o: Obj ⇒
@@ -203,6 +217,20 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
       case _ ⇒
         Obj(v.filterNot(_._1 == other.toString))
     }
+  }
+
+  def % (other: Seq[(String,Value)]): Obj = {
+    Obj(v ++ other.map {
+      case (k, Null) ⇒ k → Null
+      case (k, otherV) => k -> v.get(k).map {
+        case originalV : Obj ⇒
+          originalV.%(otherV)
+        case _ ⇒
+          otherV
+      }.getOrElse {
+        otherV
+      }
+    })
   }
 
   def + (other: Seq[(String,Value)]): Obj = {
@@ -259,6 +287,15 @@ object Obj {
       Obj.empty
     else
       new Obj(scala.collection.mutable.LinkedHashMap(v: _*))
+  }
+
+  def innerValue(path: Seq[String], value: Value): Obj = {
+    if (path.tail.isEmpty) {
+      Obj.from(path.head → value)
+    }
+    else {
+      Obj.from(path.head → innerValue(path.tail, value))
+    }
   }
 
   def extractValue(o: Obj, path: Seq[String]): Value = {

@@ -285,11 +285,14 @@ class TestValueSpec extends FlatSpec with Matchers {
 
   "Obj operators " should "work" in {
     Obj.from("a" → 1) + Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 2)
-    Obj.from("a" → 1) + Null shouldBe Obj.from("a" → 1)
     Null + Obj.from("a" → 1) shouldBe Obj.from("a" → 1)
+    Obj.from("a" → 1, "b" → Obj.from("x" → 2)) + Obj.from("b" → Null) shouldBe Obj.from("a" → 1, "b" → Obj.from("x" → 2))
+    Obj.from("b" → Null) + Obj.from("a" → 1, "b" → Obj.from("x" → 2)) shouldBe Obj.from("a" → 1, "b" → Obj.from("x" → 2))
+    Obj.from("a" → 1, "b" → 3) + Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 2)
+
     Obj.from("a" → 1) - Null shouldBe Obj.from("a" → 1)
     Null - Obj.from("a" → 1) shouldBe Null
-    Obj.from("a" → 1, "b" → 3) + Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 2)
+
     Obj.from("a" → 1, "b" → 2) - "b" shouldBe Obj.from("a" → 1)
     Obj.from("a" → 1, "b" → 2) - Obj.from("b" → 2) shouldBe Obj.from("a" → 1)
     Obj.from("a" → 1).contains("a") shouldBe true
@@ -297,6 +300,14 @@ class TestValueSpec extends FlatSpec with Matchers {
     Obj.from("a" → Some(1)).contains("a") shouldBe true
     val o: Option[String] = None
     Obj.from("a" → o).contains("a") shouldBe true
+
+    // patch operation
+    Obj.from("a" → 1) % Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 2)
+    Obj.from("a" → 1) % Null shouldBe Obj.empty
+    Null % Obj.from("a" → 1) shouldBe Obj.from("a" → 1)
+    Obj.from("a" → 1, "b" → Obj.from("x" → 2)) % Obj.from("b" → Null) shouldBe Obj.from("a" → 1, "b" → Null)
+    Obj.from("b" → Null) % Obj.from("a" → 1, "b" → Obj.from("x" → 2)) shouldBe Obj.from("a" → 1, "b" → Obj.from("x" → 2))
+    Obj.from("a" → 1, "b" → 3) % Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 2)
   }
 
   "Bool operators " should "work" in {
