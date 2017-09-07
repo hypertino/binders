@@ -73,6 +73,12 @@ trait ValueVisitor[T] {
   def visitNull(): T
 }
 
+object Value {
+  def removeNullFields(v: Value): Value = {
+    v ~~ Visitors.removeNullFieldsVisitor
+  }
+}
+
 case object Null extends Value {
   override def ~~[T](visitor: ValueVisitor[T]): T = visitor.visitNull()
 
@@ -507,6 +513,22 @@ private [value] object Visitors {
     override def visitNumber(d: Number) = false
     override def visitLst(d: Lst) = d.v.isEmpty
     override def visitNull() = true
+  }
+
+  val removeNullFieldsVisitor = new ValueVisitor[Value] {
+    override def visitNumber(d: Number): Value = d
+    override def visitNull(): Value = Null
+    override def visitBool(d: Bool): Value = d
+    override def visitObj(d: Obj): Value = Obj(d.v.flatMap {
+      case (k, Null) ⇒ None
+      case (k, other) ⇒ Some(k → removeNullFields(other))
+    })
+    override def visitText(d: Text): Value = d
+    override def visitLst(d: Lst): Value = d
+  }
+
+  def removeNullFields(content: Value): Value = {
+    content ~~ removeNullFieldsVisitor
   }
 
   def castUnavailable(s: String) = throw new ClassCastException(s)

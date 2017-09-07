@@ -338,6 +338,10 @@ class TestValueSpec extends FlatSpec with Matchers {
     p2 should equal(p)
   }
 
+  "Value.removeNulls" should "remove Null fields eand items" in {
+    Value.removeNullFields(Obj.from("a" → 1, "b" → Null, "c" → Lst.from(1,Null,2))) shouldBe Obj.from("a" → 1, "c" → Lst.from(1,Null,2))
+  }
+
   def toValueNumberPair(kv: (String, Int)) = {
     (kv._1, Number(kv._2))
   }
