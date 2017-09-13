@@ -121,10 +121,10 @@ class TestValueSpec extends FlatSpec with Matchers {
   }
 
   "Obj " should " merge (+) " in {
-    val value1 = Obj.from("a" -> 1, "b" -> "ho", "c" -> true, "d" → 5, "e" → "kl")
-    val value2 = Obj.from("a" -> 2, "b" -> "no", "c" -> false, "d" → Null)
+    val value1 = Obj.from("a" -> 1, "b" -> "ho", "d" → 5, "e" → "kl")
+    val value2 = Obj.from("a" -> 2, "b" -> "no", "d" → Null)
     val value3 = value1 + value2
-    value3 should equal(Obj.from("a" -> 2, "b" -> "no", "c" -> false, "d" → Null, "e" → Text("kl")))
+    value3 should equal(Obj.from("a" -> 3, "b" -> "hono", "d" → Null, "e" → "kl"))
   }
 
   "Obj " should " merge (+) inner fields" in {
@@ -288,7 +288,7 @@ class TestValueSpec extends FlatSpec with Matchers {
     Null + Obj.from("a" → 1) shouldBe Obj.from("a" → 1)
     Obj.from("a" → 1, "b" → Obj.from("x" → 2)) + Obj.from("b" → Null) shouldBe Obj.from("a" → 1, "b" → Obj.from("x" → 2))
     Obj.from("b" → Null) + Obj.from("a" → 1, "b" → Obj.from("x" → 2)) shouldBe Obj.from("a" → 1, "b" → Obj.from("x" → 2))
-    Obj.from("a" → 1, "b" → 3) + Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 2)
+    Obj.from("a" → 1, "b" → 3) + Obj.from("b" → 2) shouldBe Obj.from("a" → 1, "b" → 5)
 
     Obj.from("a" → 1) - Null shouldBe Obj.from("a" → 1)
     Null - Obj.from("a" → 1) shouldBe Null

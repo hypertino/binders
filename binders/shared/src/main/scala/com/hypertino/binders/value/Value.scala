@@ -242,12 +242,7 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
   def + (other: Seq[(String,Value)]): Obj = {
     Obj(v ++ other.map {
       case (k, otherV) => k -> v.get(k).map { originalV ⇒
-        if (originalV.isInstanceOf[Obj]) {
-          originalV.+(otherV)
-        }
-        else {
-          otherV
-        }
+        originalV.+(otherV)
       }.getOrElse {
         otherV
       }
@@ -419,7 +414,6 @@ trait Bool extends Value with Product {
     case _ ⇒ false
   }
   override def hashCode(): Int = if(v) 1 else 0
-  override def toString: String = s"Bool($v)"
   override def productArity: Int = 1
   override def productElement(n: Int): Any = if (n == 0) v else throw new IndexOutOfBoundsException(s"$n is out of bounds")
 }
@@ -446,7 +440,7 @@ private [value] object Visitors {
     override def visitObj(d: Obj) = d.v.map(kv => kv._1 + "->" + kv._2).mkString("{", ",", "}")
     override def visitNumber(d: Number) = d.v.toString()
     override def visitLst(d: Lst) = d.v.mkString("[", ",", "]")
-    override def visitNull(): String = ""
+    override def visitNull(): String = "Null"
   }
 
   val toBooleanVisitor = new ValueVisitor[Boolean] {
