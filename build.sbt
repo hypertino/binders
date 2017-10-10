@@ -37,17 +37,15 @@ lazy val js = binders.js
 
 lazy val jvm = binders.jvm
 
-lazy val perftest = crossProject.settings(
-    name := "perftest")
-  .enablePlugins(JmhPlugin)
-  .settings(
-    publishArtifact := false,
-    publishArtifact in Test := false,
+lazy val `binders-root` = project.settings(publishSettings:_*).in(file(".")).
+  aggregate(js, jvm).
+  settings(
     publish := {},
-    publishLocal := {}
+    publishLocal := {},
+    publishArtifact in Test := false,
+    publishArtifact := false
   )
 
-lazy val perftestJvm = perftest.jvm
 
 val publishSettings = Seq(
   pomExtra := <url>https://github.com/hypertino/binders</url>
@@ -93,13 +91,3 @@ credentials ++= (for {
   username <- Option(System.getenv().get("sonatype_username"))
   password <- Option(System.getenv().get("sonatype_password"))
 } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq
-
-
-lazy val `binders-root` = project.in(file(".")).
-  aggregate(js, jvm, perftestJvm).
-  settings(
-    publish := {},
-    publishLocal := {},
-    publishArtifact in Test := false,
-    publishArtifact := false
-  )
