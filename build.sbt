@@ -8,7 +8,7 @@ scalacOptions in Global ++= Seq("-feature", "-deprecation")
 
 lazy val binders = crossProject.settings(publishSettings:_*).settings(
     name := "binders",
-    version := "1.1-SNAPSHOT",
+    version := "1.2-SNAPSHOT",
     scalaVersion := "2.12.3",
     libraryDependencies ++= Seq(
       "com.hypertino" %%% "inflector" % "1.0.6",
@@ -45,7 +45,6 @@ lazy val `binders-root` = project.settings(publishSettings:_*).in(file(".")).
     publishArtifact in Test := false,
     publishArtifact := false
   )
-
 
 val publishSettings = Seq(
   pomExtra := <url>https://github.com/hypertino/binders</url>
