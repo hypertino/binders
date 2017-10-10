@@ -1,13 +1,13 @@
 import sbt.Keys._
 
-crossScalaVersions := Seq("2.12.1", "2.11.8", "2.10.6")
+crossScalaVersions := Seq("2.12.3", "2.11.11", "2.10.6")
 
 organization in Global := "com.hypertino"
 
 lazy val binders = crossProject.settings(publishSettings:_*).settings(
     name := "binders",
-    version := "1.0-SNAPSHOT",
-    scalaVersion := "2.12.1",
+    version := "1.1-SNAPSHOT",
+    scalaVersion := "2.12.3",
     libraryDependencies ++= Seq(
       "com.hypertino" %%% "inflector" % "1.0.6",
       "org.scalamock" %%% "scalamock-scalatest-support" % "3.5.0" % "test",

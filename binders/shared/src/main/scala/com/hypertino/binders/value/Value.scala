@@ -1,9 +1,9 @@
 package com.hypertino.binders.value
 
-import scala.language.dynamics
 import scala.language.experimental.macros
+import scala.language.dynamics
 
-sealed trait Value extends Any with Dynamic {
+sealed trait Value extends Any {
   def ~~[T](visitor: ValueVisitor[T]): T
 
   override def toString: String = this ~~ Visitors.toStringVisitor
@@ -52,16 +52,7 @@ sealed trait Value extends Any with Dynamic {
   def unary_- : Value = throw new UnsupportedOperationException(s"-$this")
   def apply(other: Value): Value = throw new UnsupportedOperationException(s"$this.apply($other)")
 
-  def selectDynamic(name: String): Value = {
-    toMap.getOrElse(
-      if (name.startsWith("_") && name.length > 1) {
-        name.substring(1)
-      } else {
-        name
-      },
-      Null
-    )
-  }
+  def dynamic: ValueDynamicSelector = ValueDynamicSelector(this)
 }
 
 trait ValueVisitor[T] {
@@ -527,3 +518,17 @@ private [value] object Visitors {
 
   def castUnavailable(s: String) = throw new ClassCastException(s)
 }
+
+case class ValueDynamicSelector(value: Value) extends AnyVal with Dynamic {
+  def selectDynamic(name: String): Value = {
+    value.toMap.getOrElse(
+      if (name.startsWith("_") && name.length > 1) {
+        name.substring(1)
+      } else {
+        name
+      },
+      Null
+    )
+  }
+}
+

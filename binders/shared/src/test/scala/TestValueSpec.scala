@@ -107,13 +107,13 @@ class TestValueSpec extends FlatSpec with Matchers {
     val d = Obj.from("a" -> 1, "b" -> "ho", "c" -> true, "_" -> false,
       "inner" → Obj.from("x" → "100500")
     )
-    val a = d.a
+    val a = d.dynamic.a
     a should equal(Number(1))
 
-    val b = d.b
+    val b = d.dynamic.b
     b should equal(Text("ho"))
 
-    val f = d.__
+    val f = d.dynamic.__
     f should equal(Bool(false))
 
     //val i = d.inner.x // todo: this doesn't work under scala 2.10, uncomment in the future
@@ -332,8 +332,8 @@ class TestValueSpec extends FlatSpec with Matchers {
   "Annotated fields " should " preserve name" in {
     val p = TestProductAnnotated(576, 90)
     val v = p.toValue
-    v.f1Value should equal(Number(576))
-    v.f2Value should equal(Number(90))
+    v.dynamic.f1Value should equal(Number(576))
+    v.dynamic.f2Value should equal(Number(90))
     val p2 = v.to[TestProductAnnotated]
     p2 should equal(p)
   }
