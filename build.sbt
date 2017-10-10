@@ -4,6 +4,8 @@ crossScalaVersions := Seq("2.12.3", "2.11.11", "2.10.6")
 
 organization in Global := "com.hypertino"
 
+scalacOptions in Global ++= Seq("-feature", "-deprecation")
+
 lazy val binders = crossProject.settings(publishSettings:_*).settings(
     name := "binders",
     version := "1.1-SNAPSHOT",
@@ -35,9 +37,17 @@ lazy val js = binders.js
 
 lazy val jvm = binders.jvm
 
-lazy val perftest = crossProject.settings(publishSettings:_*).settings(
+lazy val perftest = crossProject.settings(
     name := "perftest")
   .enablePlugins(JmhPlugin)
+  .settings(
+    publishArtifact := false,
+    publishArtifact in Test := false,
+    publish := {},
+    publishLocal := {}
+  )
+
+lazy val perftestJvm = perftest.jvm
 
 val publishSettings = Seq(
   pomExtra := <url>https://github.com/hypertino/binders</url>
@@ -79,19 +89,17 @@ val publishSettings = Seq(
   }
 )
 
-
 credentials ++= (for {
   username <- Option(System.getenv().get("sonatype_username"))
   password <- Option(System.getenv().get("sonatype_password"))
 } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq
 
 
-publishArtifact in Test := false
-
-publishArtifact := false
-
-publish := {}
-
-publishLocal := {}
-
-scalacOptions in Global ++= Seq("-feature", "-deprecation")
+lazy val `binders-root` = project.in(file(".")).
+  aggregate(js, jvm, perftestJvm).
+  settings(
+    publish := {},
+    publishLocal := {},
+    publishArtifact in Test := false,
+    publishArtifact := false
+  )
