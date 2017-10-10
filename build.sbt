@@ -90,8 +90,8 @@ publishArtifact in Test := false
 
 publishArtifact := false
 
-publish := ()
+publish := {}
 
-publishLocal := ()
+publishLocal := {}
 
 scalacOptions in Global ++= Seq("-feature", "-deprecation")
