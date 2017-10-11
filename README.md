@@ -112,6 +112,15 @@ val obj = A(10, "hello").toValue // equals to Obj.from("x" -> 10, "y" -> "hello)
 val a = obj.to[A]
 ```
 
+> `Value.dynamic` method is implemented using scala `Dynamic` type, so you can access fields by name even they 
+> are not defined at compile-time 
+> 
+> ```scala
+> val obj = Obj.from("a" -> Obj.from("x" → 1, "y" → "yey"))
+> val a = obj.dynamic.a // = Text("a")
+> ```
+
+
 You may also find an example of mixing `Value` in a case-class [with json-binders](https://github.com/hypertino/json-binders#schemalesscustom-fields)
 
 # Download
