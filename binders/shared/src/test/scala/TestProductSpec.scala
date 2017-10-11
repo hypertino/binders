@@ -1,5 +1,5 @@
 import com.hypertino.binders.annotations.fieldName
-import com.hypertino.binders.core.BindOptions
+import com.hypertino.binders.core.{BindOptions, Deserializer}
 import com.hypertino.inflector.naming.{CamelCaseToSnakeCaseConverter, PlainConverter}
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.{FlatSpec, Matchers}

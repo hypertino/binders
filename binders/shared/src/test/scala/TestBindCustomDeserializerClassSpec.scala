@@ -6,7 +6,7 @@ import org.scalatest.{FlatSpec, Matchers}
 
 trait TestCustomDeserializer[C <: Converter] extends Deserializer[C] {
   def readCustom(): Custom
-  def iterator(bindOptions: BindOptions): Iterator[TestCustomDeserializer[C]]
+  def iterator(implicit bindOptions: BindOptions): Iterator[TestCustomDeserializer[C]]
 }
 
 trait TestCustomSerializer[C <: Converter] extends Serializer[C] {
