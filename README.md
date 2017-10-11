@@ -7,7 +7,7 @@ _binders_ is a Scala/Scala.js library for creating serialization/mapping librari
 
 The aim of _binders_ 
 is to allow easily make fast (compile-time/macro based) serialization library for case-classes, collections, primitives. 
-It takes most of the complexity dealing with macro.
+It takes out most of the complexity dealing with macro.
 
 Another thing provided by _binders_ is a schema-less (untyped) data represented by `Value` type.
 
@@ -127,8 +127,6 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("public")
 )
 ```
-
-_
 
 # License
 
