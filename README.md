@@ -129,7 +129,7 @@ You may also find an example of mixing `Value` in a case-class [with json-binder
 # Download
 
 ```sbt
-libraryDependencies += "com.hypertino" %% "binders" % "1.2.0"
+libraryDependencies += "com.hypertino" %% "binders" % "1.2.1"
 ```
 Releases published to Maven Central for Scala 2.10/2.11/2.12 JVM & JS (user `%%%` for Scala.js enabled projects)
 
