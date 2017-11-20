@@ -1,5 +1,8 @@
 [![Build Status](https://travis-ci.org/hypertino/binders.svg)](https://travis-ci.org/hypertino/binders)
 [![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.hypertino/binders_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.hypertino/binders_2.12)
+[![Join the chat at https://gitter.im/Hypertino/binders](https://badges.gitter.im/Hypertino/binders.svg)](https://gitter.im/Hypertino/binders?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
+[ Latest releases and snapshots](https://oss.sonatype.org/#nexus-search;gav~com.hypertino~binders_*~~~)
 
 # About
 
@@ -7,7 +10,7 @@ _binders_ is a Scala/Scala.js library for creating serialization/mapping librari
 
 The aim of _binders_ 
 is to allow easily make fast (compile-time/macro based) serialization library for case-classes, collections, primitives. 
-It takes most of the complexity dealing with macro.
+It takes out most of the complexity dealing with macro.
 
 Another thing provided by _binders_ is a schema-less (untyped) data represented by `Value` type.
 
@@ -112,6 +115,15 @@ val obj = A(10, "hello").toValue // equals to Obj.from("x" -> 10, "y" -> "hello)
 val a = obj.to[A]
 ```
 
+> `Value.dynamic` method is implemented using scala `Dynamic` type, so you can access fields by name even they 
+> are not defined at compile-time 
+> 
+> ```scala
+> val obj = Obj.from("a" -> Obj.from("x" → 1, "y" → "yey"))
+> val a = obj.dynamic.a // = Text("a")
+> ```
+
+
 You may also find an example of mixing `Value` in a case-class [with json-binders](https://github.com/hypertino/json-binders#schemalesscustom-fields)
 
 # Download
@@ -127,8 +139,6 @@ resolvers ++= Seq(
   Resolver.sonatypeRepo("public")
 )
 ```
-
-_
 
 # License
 

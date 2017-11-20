@@ -32,7 +32,20 @@ sealed trait Value extends Any {
   def isEmpty: Boolean = this ~~ Visitors.isEmptyVisitor
 
   def nonEmpty: Boolean = !isEmpty
-
+  def mkString(sep: String): String = mkString("",sep,"",None)
+  def mkString(start: String, sep: String, end: String): String =mkString(start,sep,end,None)
+  def mkString(alternative: Option[String]): String =mkString("","","",alternative)
+  def mkString(start: String, sep: String, end: String, alternative: Option[String]): String = {
+    if (isEmpty && alternative.isDefined) {
+      alternative.get
+    }
+    else {
+      start + toString + end
+    }
+  }
+  def getOrElse(default: ⇒ Value): Value = {
+    if (isNull) default else this
+  }
   def +(other: Value): Value = throw new UnsupportedOperationException(s"$this + $other")
   def -(other: Value): Value = throw new UnsupportedOperationException(s"$this - $other")
   def ++(other: Value): Value = throw new UnsupportedOperationException(s"$this ++ $other")
@@ -266,6 +279,15 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
   override def apply(other: Value): Value = {
     Obj.extractValue(this, Obj.splitPath(other))
   }
+
+  override def mkString(start: String, sep: String, end: String, alternative: Option[String]): String = {
+    if (isEmpty && alternative.isDefined) {
+      alternative.get
+    }
+    else {
+      v.mkString(start, sep, end)
+    }
+  }
 }
 
 object Obj {
@@ -367,6 +389,15 @@ case class Lst(v: Seq[Value]) extends AnyVal with Value{
   override def apply(other: Value): Value = {
     val index = other.toInt
     v(index)
+  }
+
+  override def mkString(start: String, sep: String, end: String, alternative: Option[String]): String = {
+    if (isEmpty && alternative.isDefined) {
+      alternative.get
+    }
+    else {
+      v.mkString(start, sep, end)
+    }
   }
 }
 
