@@ -120,6 +120,46 @@ class TestValueSpec extends FlatSpec with Matchers {
     //i shouldBe Text("100500")
   }
 
+  it should " mkString" in {
+    val d = Number(1)
+    d.mkString(Some("number")) shouldBe "1"
+
+    val o = Obj.from("a" -> 1, "b" -> "ho", "c" -> true, "_" -> false)
+    o.mkString(",") shouldBe "a -> 1,b -> ho,c -> true,_ -> false"
+
+    val n = Null
+    n.mkString(Some("this is null")) shouldBe "this is null"
+
+    val on = Obj.empty
+    on.mkString(Some("empty object")) shouldBe "empty object"
+
+    val l = Lst.from("a", 1)
+    l.mkString("",",","",Some("empty object")) shouldBe "a,1"
+
+    val ln = Lst.empty
+    ln.mkString(Some("empty list")) shouldBe "empty list"
+  }
+
+  it should " getOrElse" in {
+    val d = Number(1)
+    d.getOrElse("abc") shouldBe Number(1)
+
+    val o = Obj.from("a" -> 1)
+    o.getOrElse("abc") shouldBe Obj.from("a" -> 1)
+
+    val n = Null
+    n.getOrElse("abc") shouldBe Text("abc")
+
+    val on = Obj.empty
+    on.getOrElse("abc") shouldBe Obj.empty
+
+    val l = Lst.from("a", 1)
+    l.getOrElse("abc") shouldBe Lst.from("a", 1)
+
+    val ln = Lst.empty
+    ln.getOrElse("abc") shouldBe Lst.empty
+  }
+
   "Obj " should " merge (+) " in {
     val value1 = Obj.from("a" -> 1, "b" -> "ho", "d" → 5, "e" → "kl")
     val value2 = Obj.from("a" -> 2, "b" -> "no", "d" → Null)
