@@ -8,7 +8,7 @@ scalacOptions in Global ++= Seq("-feature", "-deprecation")
 
 lazy val binders = crossProject.settings(publishSettings:_*).settings(
     name := "binders",
-    version := "1.2.0",
+    version := "1.2.1",
     scalaVersion := "2.12.3",
     libraryDependencies ++= Seq(
       "com.hypertino" %%% "inflector" % "1.0.6",
