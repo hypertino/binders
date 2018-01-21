@@ -33,8 +33,14 @@ object TestTraitAnnotated {
   def unapply(t: TestTraitAnnotated) = Some((t.intValue, t.stringValue))
 }
 
-
 case class TraitContainer(intValue: Int, stringValue: String) extends TestTrait with TestTraitAnnotated
+
+trait TestTrait2 {
+  def intValue: Int
+  def stringValue: String
+}
+
+case class TraitContainer2(intValue: Int, stringValue: String) extends TestTrait2
 
 class TestProductSpec extends FlatSpec with Matchers with MockFactory {
   "all case class fields " should " be serialized by names " in {
@@ -310,5 +316,61 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     t.stringValue shouldBe "abc"
     t shouldBe TestTrait(123456, "abc")
   }
+
+  "partial annotated fields of trait with companion " should " be serialized " in {
+    val m = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
+    val m1 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
+    val m2 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
+
+    inSequence {
+      m.beginObject _ expects()
+      m.getFieldSerializer _ expects "f1Value" returning Some(m1)
+      m1.writeInt _ expects 576
+      m.getFieldSerializer _ expects "f2_value" returning Some(m2)
+      m2.writeString _ expects "90"
+      m.endObject _ expects ()
+    }
+    m.bindPartial(TestTraitAnnotated(576, "90"))
+  }
+
+  "partial trait fields " should " be serialized" in {
+    val m = mock[TestSerializer[PlainConverter.type]]
+    val m1 = mock[TestSerializer[PlainConverter.type]]
+    val m2 = mock[TestSerializer[PlainConverter.type]]
+
+    inSequence {
+      m.beginObject _ expects()
+      m.getFieldSerializer _ expects "intValue" returning Some(m1)
+      m1.writeInt _ expects 123456
+
+      m.getFieldSerializer _ expects "stringValue" returning Some (m2)
+      m2.writeString _ expects "abc"
+
+      m.endObject _ expects()
+    }
+
+    m.bindPartial(TestTrait(123456, "abc"))
+  }
+
+//  this doesn't work yet
+//  "partial trait fields " should " be serialized even if there is no companion object" in {
+//    val m = mock[TestSerializer[PlainConverter.type]]
+//    val m1 = mock[TestSerializer[PlainConverter.type]]
+//    val m2 = mock[TestSerializer[PlainConverter.type]]
+//
+//    inSequence {
+//      m.beginObject _ expects()
+//      m.getFieldSerializer _ expects "intValue" returning Some(m1)
+//      m1.writeInt _ expects 123456
+//
+//      m.getFieldSerializer _ expects "stringValue" returning Some (m2)
+//      m2.writeString _ expects "abc"
+//
+//      m.endObject _ expects()
+//    }
+//
+//    val t: TestTrait2 = TraitContainer2(123456, "abc")
+//    m.bindPartial(t)
+//  }
   // todo: inner class serialization
 }
