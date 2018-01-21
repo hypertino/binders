@@ -10,7 +10,7 @@ scalacOptions in Global ++= Seq("-feature", "-deprecation")
 
 lazy val binders = crossProject.settings(publishSettings:_*).settings(
     name := "binders",
-    version := "1.2-SNAPSHOT",
+    version := "1.2.2",
     libraryDependencies ++= Seq(
       "com.hypertino" %%% "inflector" % "1.0.7",
       "org.scalamock" %%% "scalamock-scalatest-support" % "3.5.0" % "test",
