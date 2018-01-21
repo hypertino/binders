@@ -12,7 +12,7 @@ package object binders {
 
     def bindArgs(t: Any*): S = macro BindersMacro.bindArgs[S]
 
-    def bindPartial[O <: Product](value: O): S = macro BindersMacro.bindPartial[S, O]
+    def bindPartial[O](value: O): S = macro BindersMacro.bindPartial[S, O]
   }
 
   implicit class DeserializerOps[D <: Deserializer[_]](val deserializer: D) extends AnyVal {
