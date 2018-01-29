@@ -95,12 +95,36 @@ class TestValueSpec extends FlatSpec with Matchers {
     d1.toMap should equal (Map("a" -> Number(1), "b" -> Text("ho"), "c" -> Bool(true)))
   }
 
-  "valueAs " should " deserialize StringMap = Map[String,String] " in {
+  "toValue " should " serialize Seq[TestValue] " in {
+    val i1 = Seq(TestValue(1,"ho",true))
+    val d1 = i1.toValue
+    d1 should equal (Lst.from(Obj.from("a" -> Number(1), "b" -> Text("ho"), "c" -> Bool(true))))
+  }
+
+  "toValue " should " serialize Seq[Seq[Int]] " in {
+    val i1 = Seq(Seq(1))
+    val d1 = i1.toValue
+    d1 should equal (Lst.from(Lst.from(1)))
+  }
+
+  "to " should " deserialize StringMap = Map[String,String] " in {
     import DefineType2._
 
     val m = Obj.from("a" -> "he", "b" -> "ho")
     val map = m.to[StringMap]
     map should equal(Map("a"->"he", "b"->"ho"))
+  }
+
+  "to " should " deserialize Seq[TestValue] " in {
+    val l = Lst.from(Obj.from("a" -> Number(1), "b" -> Text("ho"), "c" -> Bool(true)))
+    val d1 = l.to[Seq[TestValue]]
+    d1 should equal (Seq(TestValue(1,"ho",true)))
+  }
+
+  "to " should " deserialize Seq[Seq[Int]] " in {
+    val l = Lst.from(Lst.from(1))
+    val d1 = l.to[Seq[Seq[Int]]]
+    d1 should equal (Seq(Seq(1)))
   }
 
   "Value " should " allow selectDynamic " in {

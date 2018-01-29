@@ -1,5 +1,3 @@
-import sbt.Keys._
-
 crossScalaVersions := Seq("2.12.4", "2.11.12", "2.10.6")
 
 scalaVersion in Global := crossScalaVersions.value.head
