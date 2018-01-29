@@ -5,6 +5,8 @@ import java.util.Date
 import com.hypertino.binders.core.{BindOptions, Serializer}
 import com.hypertino.inflector.naming.Converter
 
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.language.experimental.macros
 
 class ValueSerializeException(message: String) extends RuntimeException(message)
@@ -17,6 +19,7 @@ abstract class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait
   protected var value: Value = _
   protected var map: scala.collection.mutable.Map[String, ValueSerializerBaseTrait[C]] = _
   protected var seq: scala.collection.mutable.ArrayBuffer[Value] = _
+  protected var stack: mutable.ArrayBuffer[scala.collection.mutable.ArrayBuffer[Value]] = null //new ArrayBuffer[ArrayBuffer[Value]]()
 
   protected def bindOptions: BindOptions
 
@@ -51,21 +54,57 @@ abstract class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait
   }
 
   def beginObject(): Unit = {
+    if (seq != null) {
+      pushSeq()
+    }
     map = new scala.collection.mutable.HashMap[String, ValueSerializerBaseTrait[C]]()
   }
 
   def endObject(): Unit = {
-    value = Obj(map.toMap.map(kv => (kv._1, kv._2.result)))
-    map = null
+    val o = Obj(map.toMap.map(kv => (kv._1, kv._2.result)))
+    if (isStackEmpty) {
+      value = o
+      map = null
+    }
+    else {
+      popSeq()
+      seq += o
+    }
   }
 
   def beginArray(): Unit = {
+    if (seq != null) {
+      pushSeq()
+    }
     seq = new scala.collection.mutable.ArrayBuffer[Value]()
   }
 
   def endArray(): Unit = {
-    value = Lst(seq)
-    seq = null
+    val s = Lst(seq)
+    if (isStackEmpty) {
+      value = s
+      seq = null
+    }
+    else {
+      popSeq()
+      seq += s
+    }
+  }
+
+  protected def isStackEmpty: Boolean = stack == null || stack.isEmpty
+
+  protected def pushSeq(): Unit = {
+    if (isStackEmpty) {
+      stack = new ArrayBuffer[ArrayBuffer[Value]]()
+    }
+    stack += seq
+  }
+
+  protected def popSeq(): Unit = {
+    if (isStackEmpty) {
+      throw new IllegalStateException("Stack is empty, can't deserialize")
+    }
+    seq = stack.remove(stack.size -1)
   }
 
   def result: Value = value

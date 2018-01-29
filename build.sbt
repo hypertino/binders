@@ -1,5 +1,3 @@
-import sbt.Keys._
-
 crossScalaVersions := Seq("2.12.4", "2.11.12", "2.10.6")
 
 scalaVersion in Global := crossScalaVersions.value.head
@@ -72,8 +70,8 @@ val publishSettings = Seq(
         <url>https://github.com/hypertino</url>
       </developer>
     </developers>,
-  pgpSecretRing := file("./travis/ht-oss-private.asc"),
-  pgpPublicRing := file("./travis/ht-oss-public.asc"),
+  pgpSecretRing := file("./travis/script/ht-oss-private.asc"),
+  pgpPublicRing := file("./travis/script/ht-oss-public.asc"),
   usePgpKeyHex("F8CDEF49B0EDEDCC"),
   pgpPassphrase := Option(System.getenv().get("oss_gpg_passphrase")).map(_.toCharArray),
   publishMavenStyle := true,
