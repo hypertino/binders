@@ -448,21 +448,14 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
 
   }
 
-  protected def makeReaderWriterCall(elemTerm: Tree, method: (MethodSymbol, Map[Symbol, Type]), parameters: List[Tree] = List()): Apply = {
-    val inner = Apply(applyTypeArgs(Select(elemTerm, method._1),  method._2,  method._1.typeParams), parameters)
-    if (method._1.paramLists.isEmpty)
+  protected def makeReaderWriterCall(elemTerm: Tree, method: (MethodSymbol, Map[Symbol, Type]), arguments: List[Tree] = List()): Tree = {
+    val inner = applyTypeArgs(Select(elemTerm, method._1),  method._2,  method._1.typeParams)
+    if (arguments.nonEmpty) {
+      Apply(inner, arguments)
+    }
+    else {
       inner
-    else
-      method._1.paramLists.tail.foldLeft(inner) { (a: Apply, params: List[Symbol]) =>
-        Apply(a,
-          params.map(p =>
-            Select(
-              Select(Ident(TermName("scala")), TermName("Predef")),
-              TermName("implicitly")
-            )
-          )
-        )
-      }
+    }
   }
 
   protected def mostMatching(methods: List[MethodSymbol], scoreFun: MethodSymbol => Option[(Int, Map[Symbol, Type])]): Option[(MethodSymbol, Map[Symbol, Type])] = {
