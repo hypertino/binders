@@ -209,9 +209,10 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
                 unbindIterable[D, O]
               }
               else {
-                ctx.abort(ctx.enclosingPosition, s"No read function found for $tpe in ${weakTypeOf[D]}")
+                unbindObject[D,O](partial, originalValue)
               }
-            case s => unbindObject[D,O](partial, originalValue)
+            case _ =>
+              unbindObject[D,O](partial, originalValue)
           }
         }
       }
@@ -642,7 +643,23 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     val companionType = companionSymbol.typeSignature
 
     companionType.decl(TermName("unapply")) match {
-      case NoSymbol => ctx.abort(ctx.enclosingPosition, s"No setter or unapply function found for ${companioned.fullName}")
+      case NoSymbol =>
+        val constructorSymbol = dealiased.decl(termNames.CONSTRUCTOR)
+        val args = if (constructorSymbol != NoSymbol) {
+          val defaultConstructor =
+            if (constructorSymbol.isMethod) constructorSymbol.asMethod
+            else {
+              val ctors = constructorSymbol.asTerm.alternatives
+              ctors.map(_.asMethod).find(_.isPrimaryConstructor).get
+            }
+          defaultConstructor.paramLists.headOption.getOrElse(List.empty)
+        } else {
+          List.empty
+        }
+        if (args.isEmpty) {
+          ctx.abort(ctx.enclosingPosition, s"No setter or unapply function found for ${companioned.fullName}")
+        }
+        args
       case s =>
         val unapply = s.asMethod
         val unapplyReturnTypes = unapply.returnType match {
