@@ -406,6 +406,15 @@ class TestValueSpec extends FlatSpec with Matchers {
     Value.removeNullFields(Obj.from("a" → 1, "b" → Null, "c" → Lst.from(1,Null,2))) shouldBe Obj.from("a" → 1, "c" → Lst.from(1,Null,2))
   }
 
+  "toValue " should " serialize/deserialize case classes with more than 22 fields" in {
+    val m = MoreThan22Fields(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23)
+    val v = m.toValue
+    v shouldBe a[Obj]
+    v.toMap.size shouldBe 23
+    val m2 = v.to[MoreThan22Fields]
+    m2 shouldBe m
+  }
+
   def toValueNumberPair(kv: (String, Int)) = {
     (kv._1, Number(kv._2))
   }

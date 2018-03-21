@@ -352,7 +352,28 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     m.bindPartial(TestTrait(123456, "abc"))
   }
 
-//  this doesn't work yet
+  "more than 22 case class fields " should " be serialized " in {
+    val m = mock[TestSerializer[PlainConverter.type]]
+    val m1 = mock[TestSerializer[PlainConverter.type]]
+    inSequence {
+      m.beginObject _ expects()
+      for (i <- 1 to 23) {
+        m.getFieldSerializer _ expects s"a$i" returning Some(m1)
+        m1.writeInt _ expects i
+      }
+      m.endObject _ expects()
+    }
+    m.bind(MoreThan22Fields(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23))
+  }
+
+  "more than 22 case class fields " should " be deserialized " in {
+    val m = mock[TestDeserializer[PlainConverter.type]]
+    if (false){
+      m.unbind[MoreThan22Fields]
+    }
+  }
+
+  //  this doesn't work yet
 //  "partial trait fields " should " be serialized even if there is no companion object" in {
 //    val m = mock[TestSerializer[PlainConverter.type]]
 //    val m1 = mock[TestSerializer[PlainConverter.type]]
