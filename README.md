@@ -113,6 +113,12 @@ val obj = A(10, "hello").toValue // equals to Obj.from("x" -> 10, "y" -> "hello)
 
 // we also can convert it back to case-class
 val a = obj.to[A]
+
+// case class with static fields (x) and extra/dynamic fields at the same level
+case class B(x: Int, extra: Obj) extends WithExtra 
+val b = obj.to[B]
+val obj2 = b.toValue // equals to Obj.from("x" -> 10, "y" -> "hello)
+
 ```
 
 > `Value.dynamic` method is implemented using scala `Dynamic` type, so you can access fields by name even they 

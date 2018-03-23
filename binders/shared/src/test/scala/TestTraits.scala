@@ -1,5 +1,5 @@
 import com.hypertino.binders.core.{BindOptions, Deserializer, Serializer}
-import com.hypertino.binders.value.Value
+import com.hypertino.binders.value.{Obj, Value, WithExtra}
 import com.hypertino.inflector.naming.Converter
 
 import scala.reflect.ClassTag
@@ -111,3 +111,5 @@ trait TestSerializerWithGenerics[C <: Converter] extends Serializer[C] {
 case class MoreThan22Fields(a1: Int, a2: Int, a3: Int, a4: Int, a5: Int, a6: Int, a7: Int, a8: Int, a9: Int, a10: Int,
                             a11: Int, a12: Int, a13: Int, a14: Int, a15: Int, a16: Int, a17: Int, a18: Int, a19: Int, a20: Int,
                             a21: Int, a22: Int, a23: Int)
+
+case class TestClassWithExtra(a: Int, b: String, otherValue: Int, extra: Obj) extends WithExtra
