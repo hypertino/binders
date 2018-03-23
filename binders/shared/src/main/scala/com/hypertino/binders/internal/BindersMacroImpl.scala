@@ -3,7 +3,7 @@ package com.hypertino.binders.internal
 import com.hypertino.binders.core.{ImplicitDeserializer, ImplicitSerializer}
 import com.hypertino.binders.util.MacroAdapter.Context
 import com.hypertino.binders.util.{MacroAdapter, Runtime}
-import com.hypertino.binders.value.Value
+import com.hypertino.binders.value.{Value, WithExtra}
 import com.hypertino.inflector.naming.Converter
 
 import scala.collection.SeqLike
@@ -110,8 +110,9 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
   def bindObject[S: ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree, partial: Boolean): ctx.Tree = {
     val serOps = freshTerm("serOps")
     val o = freshTerm("o")
-    val converter = findConverter[S]
+    val converter = createConverter[S]
     val caseClassParams = extractCaseClassParams[O]
+    val isExtraType = isWithExtra[O]
 
     val listOfCalls: List[Tree] = caseClassParams.map { parameter =>
       val fieldName = identToFieldName(parameter, converter)
@@ -128,16 +129,48 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
         q
     }
 
+    val bindExtra = if (isExtraType) {
+      val kv = freshTerm("kv")
+      val n = freshTerm("n")
+      val convertedName = findConverter[S].map { converter =>
+        q"""
+          ${converter.termSymbol}.convert($kv._1)
+        """
+      } getOrElse {
+        q"""
+          $kv._1
+        """
+      }
+      if (partial) {
+        q"""
+          $o.extra.v.foreach { case $kv =>
+            $serOps.serializer.getFieldSerializer($convertedName).map(_.bind($kv._2))
+          }
+        """
+      } else {
+        q"""
+          $o.extra.v.foreach { case $kv =>
+            val $n = $convertedName
+            getFieldOrThrow($serOps.serializer.getFieldSerializer($n), $n).bind($kv._2)
+          }
+        """
+      }
+    }
+    else {
+      EmptyTree
+    }
+
     val block = q"""{
       import com.hypertino.binders.internal.Helpers._
       val $serOps = ${ctx.prefix.tree}
       val $o = $value
       ${callIfExists[S](q"$serOps.serializer", "beginObject")}
       ..$listOfCalls
+      $bindExtra
       ${callIfExists[S](q"$serOps.serializer", "endObject")}
       $serOps.serializer
       }"""
-    //println(block + " partial = " + partial)
+    // println(block + " partial = " + partial)
     block
   }
 
@@ -319,9 +352,11 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     val dserOps = freshTerm("dserOps")
     val i = freshTerm("i")
     val orig = freshTerm("orig")
-    val converter = findConverter[D]
+    val extra = freshTerm("extra")
+    val converter = createConverter[D]
     val caseClassParams = extractCaseClassParams[O]
     val companionSymbol = weakTypeOf[O].typeSymbol.companion
+    val isExtraType = isWithExtra[O]
 
     val vars = caseClassParams.zipWithIndex.map { case (parameter, index) =>
       val varName = TermName("i_" + parameter.name.decodedName.toString)
@@ -336,13 +371,13 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
 
         // _2
         if (parameter.asTerm.isParamWithDefault) {
-          cq"""$fieldName => {
+          Some(cq"""$fieldName => {
             $varName = $i.unbind[Option[${parameter.typeSignature}]]
-          }"""
+          }""")
         } else {
-          cq"""$fieldName => {
+          Some(cq"""$fieldName => {
             $varName = Some($i.unbind[${parameter.typeSignature}])
-          }"""
+          }""")
         },
 
         // todo: do something with this! canBuildFrom + something 11
@@ -373,6 +408,18 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
         else
           q"$parameter = $varName.getOrElse(throw new com.hypertino.binders.core.FieldNotFoundException($fieldName))"
       )
+    } ++ {
+      if (isExtraType) {
+        List(
+          (
+            q"var $extra: scala.collection.mutable.LinkedHashMap[String,com.hypertino.binders.value.Value] = null",
+            None,
+            q"{if ($extra == null) com.hypertino.binders.value.Obj.empty else com.hypertino.binders.value.Obj($extra)}"
+          )
+        )
+      } else {
+        List.empty
+      }
     }
 
     val block = q"""{
@@ -381,10 +428,29 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
       ..${vars.map(_._1)}
       $dserOps.deserializer.iterator().foreach{case $i =>
         $i.fieldName.map {
-          case ..${vars.map(_._2)}
+          case ..${vars.flatMap(_._2)}
           case other => {
-            ${callIfExists[D](q"$i", "consume")}
-           /*todo: implement smart deserialization*/
+            ${
+              if (!isExtraType) {
+                callIfExists[D](q"$i", "consume")
+              } else {
+                val convertedName = findConverter[D].map { converter =>
+                    q"""
+                      ${converter.termSymbol}.backwardConverter.map(_.convert($i.fieldName.get)).getOrElse($i.fieldName.get)
+                    """
+                  } getOrElse {
+                    q"""
+                      $i.fieldName.get
+                    """
+                  }
+                q"""
+                  if ($extra == null) {
+                    $extra = new scala.collection.mutable.LinkedHashMap[String,com.hypertino.binders.value.Value]()
+                  }
+                  $extra += $convertedName -> $i.unbind[com.hypertino.binders.value.Value]
+                """
+              }
+            }
           }
         } getOrElse {
           throw new com.hypertino.binders.core.BindersException("Can't deserialize object: iterator didn't return fieldName")
@@ -634,77 +700,83 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     ).map(_.asInstanceOf[MethodSymbol]).toList
   }
 
-  protected def allImplicits(symbols: List[List[Symbol]]): Boolean = !symbols.flatten.exists(!_.isImplicit)
+  protected def allImplicits(symbols: List[List[Symbol]]): Boolean = symbols.flatten.forall(_.isImplicit)
+
+  protected def isWithExtra[T: ctx.WeakTypeTag]: Boolean = {
+    val extraType = typeOf[WithExtra]
+    val dealiased = weakTypeOf[T].dealias
+    dealiased <:< extraType
+  }
 
   protected def extractCaseClassParams[T: ctx.WeakTypeTag]: List[ctx.Symbol] = {
     val dealiased = weakTypeOf[T].dealias
+    val isExtraType = isWithExtra[T]
     val companioned = dealiased.typeSymbol
     val companionSymbol = companioned.companion
     val companionType = companionSymbol.typeSignature
 
-    companionType.decl(TermName("unapply")) match {
-      case NoSymbol =>
-        val constructorSymbol = dealiased.decl(termNames.CONSTRUCTOR)
-        val args = if (constructorSymbol != NoSymbol) {
-          val defaultConstructor =
-            if (constructorSymbol.isMethod) constructorSymbol.asMethod
-            else {
-              val ctors = constructorSymbol.asTerm.alternatives
-              ctors.map(_.asMethod).find(_.isPrimaryConstructor).get
-            }
-          defaultConstructor.paramLists.headOption.getOrElse(List.empty)
-        } else {
+    val constructorSymbol = dealiased.decl(termNames.CONSTRUCTOR)
+    val args = if (constructorSymbol != NoSymbol) {
+      val defaultConstructor =
+        if (constructorSymbol.isMethod) constructorSymbol.asMethod
+        else {
+          val ctors = constructorSymbol.asTerm.alternatives
+          ctors.map(_.asMethod).find(_.isPrimaryConstructor).get
+        }
+      defaultConstructor.paramLists.headOption.getOrElse(List.empty)
+    } else {
+      companionType.decl(TermName("unapply")) match {
+        case NoSymbol =>
           List.empty
-        }
-        if (args.isEmpty) {
-          ctx.abort(ctx.enclosingPosition, s"No setter or unapply function found for ${companioned.fullName}")
-        }
-        args
-      case s =>
-        val unapply = s.asMethod
-        val unapplyReturnTypes = unapply.returnType match {
-          case TypeRef(_, _, Nil) =>
-            ctx.abort(ctx.enclosingPosition, s"Apply of $companionSymbol has no parameters. Are you using an empty case class?")
-          case TypeRef(_, _, args) =>
-            args.head match {
-              case t@TypeRef(_, _, Nil) => Some(List(t))
-              case t@TypeRef(_, _, arguments) =>
-                if (t <:< typeOf[Option[_]]) Some(List(t))
-                else if (t <:< typeOf[Seq[_]]) Some(List(t))
-                else if (t <:< typeOf[Set[_]]) Some(List(t))
-                else if (t <:< typeOf[Array[_]]) Some(List(t))
-                else if (t <:< typeOf[Map[_, _]]) Some(List(t))
-                else if (t <:< typeOf[Product]) Some(arguments)
-              case _ => None
-            }
-          case _ => None
-        }
+        case s =>
+          val unapply = s.asMethod
+          val unapplyReturnTypes = unapply.returnType match {
+            case TypeRef(_, _, Nil) =>
+              ctx.abort(ctx.enclosingPosition, s"Apply of $companionSymbol has no parameters. Are you using an empty case class?")
+            case TypeRef(_, _, args) =>
+              args.head match {
+                case t@TypeRef(_, _, Nil) => Some(List(t))
+                case t@TypeRef(_, _, arguments) =>
+                  if (t <:< typeOf[Option[_]]) Some(List(t))
+                  else if (t <:< typeOf[Seq[_]]) Some(List(t))
+                  else if (t <:< typeOf[Set[_]]) Some(List(t))
+                  else if (t <:< typeOf[Array[_]]) Some(List(t))
+                  else if (t <:< typeOf[Map[_, _]]) Some(List(t))
+                  else if (t <:< typeOf[Product]) Some(arguments)
+                case _ => None
+              }
+            case _ => None
+          }
 
-        companionType.decl(TermName("apply")) match {
-          case NoSymbol => ctx.abort(ctx.enclosingPosition, "No apply function found")
-          case sym =>
-            // searches apply method corresponding to unapply
-            val applies = sym.asTerm.alternatives
-            val apply = applies.collectFirst {
-              case (apply: MethodSymbol) if apply.paramLists.headOption.map(_.map(_.asTerm.typeSignature)) == unapplyReturnTypes => apply
-            } getOrElse {
-              sym.asMethod
-            }
+          companionType.decl(TermName("apply")) match {
+            case NoSymbol => ctx.abort(ctx.enclosingPosition, "No apply function found")
+            case sym =>
+              // searches apply method corresponding to unapply
+              val applies = sym.asTerm.alternatives
+              val apply = applies.collectFirst {
+                case (apply: MethodSymbol) if apply.paramLists.headOption.map(_.map(_.asTerm.typeSignature)) == unapplyReturnTypes => apply
+              } getOrElse {
+                sym.asMethod
+              }
 
-            if (apply.paramLists.tail.nonEmpty)
-              ctx.abort(ctx.enclosingPosition, "Couldn't use apply method with more than a single parameter group")
+              if (apply.paramLists.tail.nonEmpty)
+                ctx.abort(ctx.enclosingPosition, "Couldn't use apply method with more than a single parameter group")
 
-            val applyOrConstructor = dealiased.members.filter(_.isConstructor).collectFirst {
-              case (cntr: MethodSymbol) if cntr.paramLists.headOption.map(_.map(_.asTerm.typeSignature)) == unapplyReturnTypes => cntr
-            } getOrElse {
-              apply
-            }
-            // println("apply found:" + apply)
-
-            applyOrConstructor.paramLists.head
-        }
-
+              val applyOrConstructor = dealiased.members.filter(_.isConstructor).collectFirst {
+                case (cntr: MethodSymbol) if cntr.paramLists.headOption.map(_.map(_.asTerm.typeSignature)) == unapplyReturnTypes => cntr
+              } getOrElse {
+                apply
+              }
+              // println("apply found:" + apply)
+              applyOrConstructor.paramLists.head
+          }
+      }
     }
+    if (args.isEmpty) {
+      ctx.abort(ctx.enclosingPosition, s"No setter or unapply function found for ${companioned.fullName}")
+    }
+//    println(args.map(_.name.))
+    args.filterNot(_.name.toString == "extra" && isExtraType)
   }
 
   protected def identToFieldName(symbol: ctx.Symbol, converter: Option[Converter]): Literal = {
@@ -734,11 +806,11 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     ))
   }
 
-  protected def findConverter[T: ctx.WeakTypeTag]: Option[Converter] = {
+  protected def findConverter[T: ctx.WeakTypeTag]: Option[Type] = {
     val tpe = weakTypeOf[T]
     val converterTypeName = TypeName("nameConverterType")
 
-    val converterTypeOption = tpe.baseClasses.flatMap {
+    tpe.baseClasses.flatMap {
       baseSymbol =>
         val baseType = tpe.baseType(baseSymbol)
         val ct = baseType.decl(converterTypeName)
@@ -747,18 +819,20 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
           case _ =>
             val t = ct.typeSignature.asSeenFrom(tpe, baseSymbol)
             t.baseClasses.find(t.typeSymbol.isClass && _ == typeOf[Converter].typeSymbol).map { x =>
-              t.typeSymbol.asClass
+              t
             } orElse {
               ctx.abort(ctx.enclosingPosition, s"$tpe.nameConverterType: $t is not a valid Converter, please use PlainConverter if you don't need convert identifier names")
             }
         }
     }.headOption
+  }
 
-    converterTypeOption map { t =>
+  protected def createConverter[T: ctx.WeakTypeTag]: Option[Converter] = {
+    findConverter[T] map { t =>
       // this is synchronized because of bug in scala
       // http://docs.scala-lang.org/overviews/reflection/thread-safety.html
       this.synchronized {
-        Runtime.createInstance(t.fullName)
+        Runtime.createInstance(t.typeSymbol.fullName)
       }
     }
   }
