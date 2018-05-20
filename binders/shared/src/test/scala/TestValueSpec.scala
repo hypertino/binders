@@ -438,6 +438,13 @@ class TestValueSpec extends FlatSpec with Matchers {
     Obj.from("A" -> 100, "B" -> "Hey", "Other-Value" -> 200, "X" -> 456).to[TestClassWithExtra] shouldBe TestClassWithExtra(100, "Hey", 200, Obj.from("x" -> 456))
   }
 
+  it should " serialize recursive type" in {
+//    TestRecursiveCaseClass("Hey", Seq.empty).toValue shouldBe Obj.from("stringValue" -> "Hey", "recursive" -> Lst.empty)
+    val o = TestRecursiveCaseClass("Hey", Seq(TestRecursiveCaseClass("Yey", Seq.empty)))
+    o.toValue shouldBe Obj.from("stringValue" -> "Hey", "recursive" -> Obj.from("stringValue" -> "Yey", "recursive" -> Lst.empty))
+//    Seq(TestRecursiveCaseClass("Hey", Seq.empty), TestRecursiveCaseClass("Yey", Seq.empty)).toValue shouldBe Lst.from(Obj.from("stringValue" -> "Hey", "recursive" -> Lst.empty), Obj.from("stringValue" -> "Yey", "recursive" -> Lst.empty))
+  }
+
   def toValueNumberPair(kv: (String, Int)) = {
     (kv._1, Number(kv._2))
   }

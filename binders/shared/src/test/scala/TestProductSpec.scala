@@ -42,6 +42,8 @@ trait TestTrait2 {
 
 case class TraitContainer2(intValue: Int, stringValue: String) extends TestTrait2
 
+case class TestRecursiveCaseClass(stringValue: String, recursive: Seq[TestRecursiveCaseClass])
+
 class TestProductSpec extends FlatSpec with Matchers with MockFactory {
   "all case class fields " should " be serialized by names " in {
     val m = mock[TestSerializer[PlainConverter.type]]
@@ -370,6 +372,21 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m = mock[TestDeserializer[PlainConverter.type]]
     if (false){
       m.unbind[MoreThan22Fields]
+    }
+  }
+
+
+  "recursive case class " should " be serialized " in {
+    val m = mock[TestSerializer[PlainConverter.type]]
+    if (false) {
+      m.bind(TestRecursiveCaseClass("Hey", Seq(TestRecursiveCaseClass("Yey", Seq.empty))))
+    }
+  }
+
+  "recursive case class " should " be deserialized " in {
+    val m = mock[TestDeserializer[PlainConverter.type]]
+    if (false){
+      m.unbind[TestRecursiveCaseClass]
     }
   }
 

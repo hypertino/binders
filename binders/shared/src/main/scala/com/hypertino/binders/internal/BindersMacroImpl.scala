@@ -78,7 +78,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     block
   }
 
-  def bindOption[S: ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree): ctx.Tree = {
+  protected def bindOption[S: ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree): ctx.Tree = {
     val serOps = freshTerm("serOps")
     val block = q"""{
       val $serOps = ${ctx.prefix.tree}
@@ -91,7 +91,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     block
   }
 
-  def bindEither[S: ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree): ctx.Tree = {
+  protected def bindEither[S: ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree): ctx.Tree = {
     val serOps = freshTerm("serOps")
     val left = freshTerm("left")
     val right = freshTerm("right")
@@ -108,73 +108,92 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
   }
 
   def bindObject[S: ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree, partial: Boolean): ctx.Tree = {
-    val serOps = freshTerm("serOps")
+    val tpe = weakTypeOf[O]
     val o = freshTerm("o")
-    val converter = createConverter[S]
-    val caseClassParams = extractCaseClassParams[O]
-    val isExtraType = isWithExtra[O]
+    val serOps = freshTerm("serOps")
 
-    val listOfCalls: List[Tree] = caseClassParams.map { parameter =>
-      val fieldName = identToFieldName(parameter, converter)
-      val q =
-        if (partial)
-          q"$serOps.serializer.getFieldSerializer($fieldName).map(_.bind($o.${TermName(parameter.name.toString)}))"
+    val binderLabel = ctx.inferImplicitValue(weakTypeOf[com.hypertino.binders.internal.BindMethodLabel[O]])
+    if (!binderLabel.isEmpty) {
+      q"""{
+        val $serOps = ${ctx.prefix.tree}
+        val $o = $value
+        $binderLabel.bindInside($o)
+        $serOps.serializer
+      }"""
+    } else {
+      val converter = createConverter[S]
+      val caseClassParams = extractCaseClassParams[O]
+      val isExtraType = isWithExtra[O]
+
+      val listOfCalls: List[Tree] = caseClassParams.map { parameter =>
+        val fieldName = identToFieldName(parameter, converter)
+        val q =
+          if (partial)
+            q"$serOps.serializer.getFieldSerializer($fieldName).map(_.bind($o.${TermName(parameter.name.toString)}))"
+          else
+            q"getFieldOrThrow($serOps.serializer.getFieldSerializer($fieldName), $fieldName).bind($o.${TermName(parameter.name.toString)})"
+        if (parameter.typeSignature <:< typeOf[Option[_]]
+          || parameter.typeSignature <:< typeOf[Value]
+          || parameter.typeSignature <:< typeOf[Iterable[_]])
+          q"if (!$o.${TermName(parameter.name.toString)}.isEmpty || !com.hypertino.binders.core.BindOptions.get.skipOptionalFields){$q}"
         else
-          q"getFieldOrThrow($serOps.serializer.getFieldSerializer($fieldName), $fieldName).bind($o.${TermName(parameter.name.toString)})"
-      if (parameter.typeSignature <:< typeOf[Option[_]]
-        || parameter.typeSignature <:< typeOf[Value]
-        || parameter.typeSignature <:< typeOf[Iterable[_]])
-        q"if (!$o.${TermName(parameter.name.toString)}.isEmpty || !com.hypertino.binders.core.BindOptions.get.skipOptionalFields){$q}"
-      else
-        q
-    }
+          q
+      }
 
-    val bindExtra = if (isExtraType) {
-      val kv = freshTerm("kv")
-      val n = freshTerm("n")
-      val convertedName = findConverter[S].map { converter =>
-        q"""
+      val bindExtra = if (isExtraType) {
+        val kv = freshTerm("kv")
+        val n = freshTerm("n")
+        val convertedName = findConverter[S].map { converter =>
+          q"""
           ${converter.termSymbol}.convert($kv._1)
         """
-      } getOrElse {
-        q"""
+        } getOrElse {
+          q"""
           $kv._1
         """
-      }
-      if (partial) {
-        q"""
+        }
+        if (partial) {
+          q"""
           $o.extra.v.foreach { case $kv =>
             $serOps.serializer.getFieldSerializer($convertedName).map(_.bind($kv._2))
           }
         """
-      } else {
-        q"""
+        } else {
+          q"""
           $o.extra.v.foreach { case $kv =>
             val $n = $convertedName
             getFieldOrThrow($serOps.serializer.getFieldSerializer($n), $n).bind($kv._2)
           }
         """
+        }
       }
-    }
-    else {
-      EmptyTree
-    }
+      else {
+        EmptyTree
+      }
 
-    val block = q"""{
-      import com.hypertino.binders.internal.Helpers._
-      val $serOps = ${ctx.prefix.tree}
-      val $o = $value
-      ${callIfExists[S](q"$serOps.serializer", "beginObject")}
-      ..$listOfCalls
-      $bindExtra
-      ${callIfExists[S](q"$serOps.serializer", "endObject")}
-      $serOps.serializer
+      val m = freshTerm("m")
+      val block = q"""{
+        import com.hypertino.binders.internal.Helpers._
+        val $serOps = ${ctx.prefix.tree}
+        val $o = $value
+        def $m(v: ${weakTypeOf[O]}): Unit = {
+          implicit val ${freshTerm("binderLabel")} = new com.hypertino.binders.internal.BindMethodLabel[$tpe] {
+            def bindInside(t: $tpe): Unit = $m(t)
+          }
+          ${callIfExists[S](q"$serOps.serializer", "beginObject")}
+          ..$listOfCalls
+          $bindExtra
+          ${callIfExists[S](q"$serOps.serializer", "endObject")}
+        }
+        $m($o)
+        $serOps.serializer
       }"""
-    // println(block + " partial = " + partial)
-    block
+      println(block)
+      block
+    }
   }
 
-  def bindTraversable[S : ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree): ctx.Tree = {
+  protected def bindTraversable[S : ctx.WeakTypeTag, O: ctx.WeakTypeTag](value: ctx.Tree): ctx.Tree = {
     val serOps = freshTerm("serOps")
     val block = q"""{
       val $serOps = ${ctx.prefix.tree}
@@ -183,11 +202,11 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
       ${callIfExists[S](q"$serOps.serializer", "endArray")}
       $serOps.serializer
     }"""
-    //println(block)
+    println(block)
     block
   }
 
-  def bindMap(value: ctx.Tree): ctx.Tree = {
+  protected def bindMap(value: ctx.Tree): ctx.Tree = {
     val serOps = freshTerm("serOps")
     val k = freshTerm("k")
     val v = freshTerm("v")
@@ -253,7 +272,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     block
   }
 
-  def unbindOption[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag]: ctx.Tree = {
+  protected def unbindOption[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag]: ctx.Tree = {
     val dserOps = freshTerm("dserOps")
     val tpe = weakTypeOf[O]
     val elTpe = extractTypeArgs(tpe).head
@@ -269,7 +288,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     block
   }
 
-  def unbindEither[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag]: ctx.Tree = {
+  protected def unbindEither[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag]: ctx.Tree = {
     val dserOps = freshTerm("dserOps")
     val v = freshTerm("v")
     val rightIsBetter = freshTerm("rightIsBetter")
@@ -310,7 +329,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     block
   }
 
-  def getTypeValueString(ct: Type) = {
+  protected def getTypeValueString(ct: Type) = {
     val t = if (ct <:< typeOf[Option[_]]) extractTypeArgs(ct).head.tpe else ct
 
     if (t =:= typeOf[Double]
@@ -336,7 +355,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     //Iterable
   }
 
-  def unbindIterable[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag]: ctx.Tree = {
+  protected def unbindIterable[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag]: ctx.Tree = {
     val dserOps = freshTerm("dserOps")
     val tpe = weakTypeOf[O]
     val elTpe = extractTypeArgs(tpe).head
@@ -348,124 +367,145 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     q
   }
 
-  def unbindObject[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag](partial: Boolean, originalValue: ctx.Tree): ctx.Tree = {
+  protected def unbindObject[D: ctx.WeakTypeTag, O: ctx.WeakTypeTag](partial: Boolean, originalValue: ctx.Tree): ctx.Tree = {
     val dserOps = freshTerm("dserOps")
-    val i = freshTerm("i")
-    val orig = freshTerm("orig")
-    val extra = freshTerm("extra")
-    val converter = createConverter[D]
-    val caseClassParams = extractCaseClassParams[O]
-    val companionSymbol = weakTypeOf[O].typeSymbol.companion
-    val isExtraType = isWithExtra[O]
+    val tpe = weakTypeOf[O]
+    val unbinderLabel = ctx.inferImplicitValue(weakTypeOf[com.hypertino.binders.internal.UnbindMethodLabel[O]])
+    if (!unbinderLabel.isEmpty) {
+      q"""{
+        $unbinderLabel.unbindInside()
+      }"""
+    }
+    else {
+      val i = freshTerm("i")
+      val orig = freshTerm("orig")
+      val extra = freshTerm("extra")
+      val m = freshTerm("m")
+      val converter = createConverter[D]
+      val caseClassParams = extractCaseClassParams[O]
+      val companionSymbol = tpe.typeSymbol.companion
+      val isExtraType = isWithExtra[O]
 
-    val vars = caseClassParams.zipWithIndex.map { case (parameter, index) =>
-      val varName = TermName("i_" + parameter.name.decodedName.toString)
-      val fieldName = identToFieldName(parameter, converter)
+      val vars = caseClassParams.zipWithIndex.map { case (parameter, index) =>
+        val varName = TermName("i_" + parameter.name.decodedName.toString)
+        val fieldName = identToFieldName(parameter, converter)
 
-      (
-        // _1
-        if (partial)
-          q"var $varName : Option[${parameter.typeSignature}] = Some($orig.${parameter.name.toTermName})"
-        else
-          q"var $varName : Option[${parameter.typeSignature}] = None",
+        (
+          // _1
+          if (partial)
+            q"var $varName : Option[${parameter.typeSignature}] = Some($orig.${parameter.name.toTermName})"
+          else
+            q"var $varName : Option[${parameter.typeSignature}] = None",
 
-        // _2
-        if (parameter.asTerm.isParamWithDefault) {
-          Some(cq"""$fieldName => {
+          // _2
+          if (parameter.asTerm.isParamWithDefault) {
+            Some(cq"""$fieldName => {
             $varName = $i.unbind[Option[${parameter.typeSignature}]]
           }""")
-        } else {
-          Some(cq"""$fieldName => {
+          } else {
+            Some(cq"""$fieldName => {
             $varName = Some($i.unbind[${parameter.typeSignature}])
           }""")
-        },
+          },
 
-        // todo: do something with this! canBuildFrom + something 11
-        // _3
-        if (parameter.asTerm.isParamWithDefault) {
-          val defVal = TermName("apply$default$" + (index + 1))
-          q"$parameter = $varName.getOrElse($companionSymbol.$defVal)"
-        } else if (parameter.typeSignature <:< typeOf[Option[_]])
-          q"$parameter = $varName.flatten"
-        else if (parameter.typeSignature <:< typeOf[Value])
-          q"$parameter = $varName.getOrElse(com.hypertino.binders.value.Null)"
-        else if (parameter.typeSignature <:< typeOf[Map[_,_]])
-          q"$parameter = $varName.getOrElse(Map.empty)"
-        else if (parameter.typeSignature <:< typeOf[Vector[_]])
-          q"$parameter = $varName.getOrElse(Vector.empty)"
-        else if (parameter.typeSignature <:< typeOf[IndexedSeq[_]])
-          q"$parameter = $varName.getOrElse(IndexedSeq.empty)"
-        else if (parameter.typeSignature <:< typeOf[Set[_]])
-          q"$parameter = $varName.getOrElse(Set.empty)"
-        else if (parameter.typeSignature <:< typeOf[List[_]])
-          q"$parameter = $varName.getOrElse(List.empty)"
-        else if (parameter.typeSignature <:< typeOf[Seq[_]])
-          q"$parameter = $varName.getOrElse(Seq.empty)"
-        else if (parameter.typeSignature <:< typeOf[Array[_]])
-          q"$parameter = $varName.getOrElse(Array())"
-        else if (parameter.typeSignature <:< typeOf[TraversableOnce[_]])
-          q"$parameter = $varName.getOrElse(${emptyTraversable(parameter.typeSignature)})"
-        else
-          q"$parameter = $varName.getOrElse(throw new com.hypertino.binders.core.FieldNotFoundException($fieldName))"
-      )
-    } ++ {
-      if (isExtraType) {
-        List(
-          (
-            q"var $extra: scala.collection.mutable.LinkedHashMap[String,com.hypertino.binders.value.Value] = null",
-            None,
-            q"{if ($extra == null) com.hypertino.binders.value.Obj.empty else com.hypertino.binders.value.Obj($extra)}"
-          )
+          // todo: do something with this! canBuildFrom + something 11
+          // _3
+          if (parameter.asTerm.isParamWithDefault) {
+            val defVal = TermName("apply$default$" + (index + 1))
+            q"$parameter = $varName.getOrElse($companionSymbol.$defVal)"
+          } else if (parameter.typeSignature <:< typeOf[Option[_]])
+            q"$parameter = $varName.flatten"
+          else if (parameter.typeSignature <:< typeOf[Value])
+            q"$parameter = $varName.getOrElse(com.hypertino.binders.value.Null)"
+          else if (parameter.typeSignature <:< typeOf[Map[_, _]])
+            q"$parameter = $varName.getOrElse(Map.empty)"
+          else if (parameter.typeSignature <:< typeOf[Vector[_]])
+            q"$parameter = $varName.getOrElse(Vector.empty)"
+          else if (parameter.typeSignature <:< typeOf[IndexedSeq[_]])
+            q"$parameter = $varName.getOrElse(IndexedSeq.empty)"
+          else if (parameter.typeSignature <:< typeOf[Set[_]])
+            q"$parameter = $varName.getOrElse(Set.empty)"
+          else if (parameter.typeSignature <:< typeOf[List[_]])
+            q"$parameter = $varName.getOrElse(List.empty)"
+          else if (parameter.typeSignature <:< typeOf[Seq[_]])
+            q"$parameter = $varName.getOrElse(Seq.empty)"
+          else if (parameter.typeSignature <:< typeOf[Array[_]])
+            q"$parameter = $varName.getOrElse(Array())"
+          else if (parameter.typeSignature <:< typeOf[TraversableOnce[_]])
+            q"$parameter = $varName.getOrElse(${emptyTraversable(parameter.typeSignature)})"
+          else
+            q"$parameter = $varName.getOrElse(throw new com.hypertino.binders.core.FieldNotFoundException($fieldName))"
         )
-      } else {
-        List.empty
-      }
-    }
-
-    val block = q"""{
-      val $dserOps = ${ctx.prefix.tree}
-      ${if (partial) { q"val $orig = $originalValue" } else q""}
-      ..${vars.map(_._1)}
-      $dserOps.deserializer.iterator().foreach{case $i =>
-        $i.fieldName.map {
-          case ..${vars.flatMap(_._2)}
-          case other => {
-            ${
-              if (!isExtraType) {
-                callIfExists[D](q"$i", "consume")
-              } else {
-                val convertedName = findConverter[D].map { converter =>
-                    q"""
-                      ${converter.termSymbol}.backwardConverter.map(_.convert($i.fieldName.get)).getOrElse($i.fieldName.get)
-                    """
-                  } getOrElse {
-                    q"""
-                      $i.fieldName.get
-                    """
-                  }
-                q"""
-                  if ($extra == null) {
-                    $extra = new scala.collection.mutable.LinkedHashMap[String,com.hypertino.binders.value.Value]()
-                  }
-                  $extra += $convertedName -> $i.unbind[com.hypertino.binders.value.Value]
-                """
-              }
-            }
-          }
-        } getOrElse {
-          throw new com.hypertino.binders.core.BindersException("Can't deserialize object: iterator didn't return fieldName")
+      } ++ {
+        if (isExtraType) {
+          List(
+            (
+              q"var $extra: scala.collection.mutable.LinkedHashMap[String,com.hypertino.binders.value.Value] = null",
+              None,
+              q"{if ($extra == null) com.hypertino.binders.value.Obj.empty else com.hypertino.binders.value.Obj($extra)}"
+            )
+          )
+        } else {
+          List.empty
         }
       }
 
-      $companionSymbol(
-        ..${vars.map(_._3)}
-      )
-    }"""
-    //println(block)
-    block
+      val block = q"""{
+        val $dserOps = ${ctx.prefix.tree}
+        def $m(): ${weakTypeOf[O]} = {
+          implicit val unbinder = new com.hypertino.binders.internal.UnbindMethodLabel[${weakTypeOf[O]}] {
+            def unbindInside(): ${weakTypeOf[O]} = $m()
+          }
+
+          ${
+            if (partial) {
+              q"val $orig = $originalValue"
+            } else q""
+          }
+          ..${vars.map(_._1)}
+          $dserOps.deserializer.iterator().foreach{case $i =>
+            $i.fieldName.map {
+              case ..${vars.flatMap(_._2)}
+              case other => {
+                ${
+                  if (!isExtraType) {
+                    callIfExists[D](q"$i", "consume")
+                  } else {
+                    val convertedName = findConverter[D].map { converter =>
+                      q"""
+                        ${converter.termSymbol}.backwardConverter.map(_.convert($i.fieldName.get)).getOrElse($i.fieldName.get)
+                      """
+                    } getOrElse {
+                      q"""
+                        $i.fieldName.get
+                      """
+                    }
+                    q"""
+                      if ($extra == null) {
+                        $extra = new scala.collection.mutable.LinkedHashMap[String,com.hypertino.binders.value.Value]()
+                      }
+                      $extra += $convertedName -> $i.unbind[com.hypertino.binders.value.Value]
+                    """
+                  }
+                }
+              }
+            } getOrElse {
+              throw new com.hypertino.binders.core.BindersException("Can't deserialize object: iterator didn't return fieldName")
+            }
+          }
+
+          $companionSymbol(
+            ..${vars.map(_._3)}
+          )
+        }
+        $m()
+      }"""
+      //println(block)
+      block
+    }
   }
 
-  def unbindMap[O: ctx.WeakTypeTag]: ctx.Tree = {
+  protected def unbindMap[O: ctx.WeakTypeTag]: ctx.Tree = {
     val dserOps = freshTerm("dserOps")
     val el = freshTerm("el")
     val tpe = weakTypeOf[O]
@@ -553,7 +593,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
   }
 
 
-  def typeBoundsComply(withType: Type, genericType: Type, genericSymbol: Symbol, methodTypeParams: List[Symbol]): Boolean = {
+  protected def typeBoundsComply(withType: Type, genericType: Type, genericSymbol: Symbol, methodTypeParams: List[Symbol]): Boolean = {
     methodTypeParams.find(_ == genericSymbol).forall { typeParamSymbol ⇒
       typeParamSymbol.typeSignature match {
         case TypeBounds(lo, hi) ⇒
@@ -565,7 +605,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     }
   }
 
-  def compareGenericTypesBounds(dst: Type, src: Type, typeParams: List[Symbol], rl: Int): (Int, Map[Symbol, Type]) = {
+  protected def compareGenericTypesBounds(dst: Type, src: Type, typeParams: List[Symbol], rl: Int): (Int, Map[Symbol, Type]) = {
     src match {
       case TypeRef(srcTpe, srcSym, _) if srcTpe == NoPrefix =>
         if (typeBoundsComply(dst, srcTpe, srcSym, typeParams))
@@ -586,7 +626,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     }
   }
 
-  def compareGenericWithArgs(dstTypeArgs: List[Type], srcTypeArgs: List[Type], typeParams: List[Symbol], rl: Int) : (Int, Map[Symbol, Type])= {
+  protected def compareGenericWithArgs(dstTypeArgs: List[Type], srcTypeArgs: List[Type], typeParams: List[Symbol], rl: Int) : (Int, Map[Symbol, Type])= {
     val typeMap = collection.mutable.Map[Symbol, Type]()
     var r = rl
     // now check generic type args
@@ -605,7 +645,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
     (r, typeMap.toMap)
   }
 
-  def compareGenericNoPrefix(dstTpe: Type, dstSym: Symbol, src: Type, typeParams: List[Symbol], rl: Int): (Int, Map[Symbol, Type]) = {
+  protected def compareGenericNoPrefix(dstTpe: Type, dstSym: Symbol, src: Type, typeParams: List[Symbol], rl: Int): (Int, Map[Symbol, Type]) = {
     if (dstTpe == NoPrefix && typeBoundsComply(src, dstTpe, dstSym, typeParams)) {
       val typeMap = collection.mutable.Map[Symbol, Type]()
       typeMap += dstSym -> src
