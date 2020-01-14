@@ -87,4 +87,5 @@ Global / pgpPassphrase := Option(System.getenv().get("oss_gpg_passphrase")).map(
 Global / credentials ++= Seq(
     Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", System.getenv().get("sonatype_username"), System.getenv().get("sonatype_password")),
   )
+Global / useGpgAgent := false
 usePgpKeyHex("97A4EB3D60277A26D5B5480BA53DC2FF4858319D")
