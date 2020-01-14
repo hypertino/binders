@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/hypertino/binders.svg)](https://travis-ci.org/hypertino/binders)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.hypertino/binders_2.12/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.hypertino/binders_2.12)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/com.hypertino/binders_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/com.hypertino/binders_2.13)
 [![Join the chat at https://gitter.im/Hypertino/binders](https://badges.gitter.im/Hypertino/binders.svg)](https://gitter.im/Hypertino/binders?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 [ Latest releases and snapshots](https://oss.sonatype.org/#nexus-search;gav~com.hypertino~binders_*~~~)
@@ -135,9 +135,9 @@ You may also find an example of mixing `Value` in a case-class [with json-binder
 # Download
 
 ```sbt
-libraryDependencies += "com.hypertino" %% "binders" % "1.2.1"
+libraryDependencies += "com.hypertino" %% "binders" % "1.3.0"
 ```
-Releases published to Maven Central for Scala 2.10/2.11/2.12 JVM & JS (user `%%%` for Scala.js enabled projects)
+Releases published to Maven Central for Scala 2.11 - 2.13 JVM & JS (user `%%%` for Scala.js enabled projects)
 
 Snapshots live in Sonatype repository, include it additionally:
 ```sbt

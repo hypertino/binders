@@ -72,10 +72,6 @@ val publishSettings = Seq(
         <url>https://github.com/hypertino</url>
       </developer>
     </developers>,
-  pgpSecretRing := file("./travis/script/ht-oss-private.asc"),
-  pgpPublicRing := file("./travis/script/ht-oss-public.asc"),
-  usePgpKeyHex("F8CDEF49B0EDEDCC"),
-  pgpPassphrase := Option(System.getenv().get("oss_gpg_passphrase")).map(_.toCharArray),
   publishMavenStyle := true,
   pomIncludeRepository := { _ => false},
   publishTo := {
@@ -84,10 +80,12 @@ val publishSettings = Seq(
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
-  credentials ++= (for {
-    username <- Option(System.getenv().get("sonatype_username"))
-    password <- Option(System.getenv().get("sonatype_password"))
-  } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq
+  }
 )
 
+Global / pgpPassphrase := Option(System.getenv().get("oss_gpg_passphrase")).map(_.toCharArray)
+Global / credentials ++= Seq(
+    Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", System.getenv().get("sonatype_username"), System.getenv().get("sonatype_password")),
+  )
+Global / useGpgAgent := false
+usePgpKeyHex("97A4EB3D60277A26D5B5480BA53DC2FF4858319D")
