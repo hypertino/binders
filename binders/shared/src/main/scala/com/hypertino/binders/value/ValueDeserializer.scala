@@ -20,7 +20,7 @@ abstract class ValueDeserializerBase[C <: Converter, I <: Deserializer[C]] (valu
       case obj:Obj => obj.v
         .toIterator
         .map(kv => createFieldDeserializer(kv._2, Some(kv._1)))
-      case Null ⇒ Iterator.empty
+      case Null => Iterator.empty
       case _ => throw new ValueDeserializeException("Couldn't iterate on: " + value)
     }
   }

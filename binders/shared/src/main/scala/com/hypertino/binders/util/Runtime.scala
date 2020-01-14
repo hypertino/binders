@@ -17,7 +17,7 @@ object Runtime extends RuntimeUniverseAdapter {
       module.instance.asInstanceOf[Converter]
     }
     catch {
-      case NonFatal(e) ⇒
+      case NonFatal(e) =>
         val sym = mirror.classSymbol(clz)
         val r = mirror.reflectClass(sym)
         val m = r.symbol.typeSignature.member(termNames.CONSTRUCTOR).asMethod

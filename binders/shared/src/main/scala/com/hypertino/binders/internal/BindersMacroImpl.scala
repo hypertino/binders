@@ -482,12 +482,14 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
 
   protected def emptyTraversable(ct: Type): Tree = {
     val elType = extractTypeArgs(ct).head
-    q"implicitly[scala.collection.generic.CanBuildFrom[_,$elType,$ct]].apply().result()"
+    val f = collectionsFactory(elType, ct)
+    q"$f.result()"
   }
 
   protected def convertIterator(ct: Type, iteratorTree: Tree): Tree = {
     val elType = extractTypeArgs(ct).head
-    q"implicitly[scala.collection.generic.CanBuildFrom[_,$elType,$ct]].apply().++=($iteratorTree).result()"
+    val f = collectionsFactory(elType, ct)
+    q"$f.++=($iteratorTree).result()"
   }
 
   protected def extractTypeArgs(tpe: Type): List[TypeTree] = {
@@ -554,12 +556,12 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
 
 
   def typeBoundsComply(withType: Type, genericType: Type, genericSymbol: Symbol, methodTypeParams: List[Symbol]): Boolean = {
-    methodTypeParams.find(_ == genericSymbol).forall { typeParamSymbol ⇒
+    methodTypeParams.find(_ == genericSymbol).forall { typeParamSymbol =>
       typeParamSymbol.typeSignature match {
-        case TypeBounds(lo, hi) ⇒
+        case TypeBounds(lo, hi) =>
           lo <:< withType && withType <:< hi
 
-        case other: Type ⇒
+        case other: Type =>
           withType <:< other
       }
     }
@@ -573,14 +575,14 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
         else
           (0, Map.empty)
 
-      case _ ⇒ dst match {
+      case _ => dst match {
         case TypeRef(dstTpe, dstSym, _) if dstTpe == NoPrefix =>
           if (typeBoundsComply(src, dstTpe, dstSym, typeParams))
             (20, Map(dstSym → src))
           else
             (0, Map.empty)
 
-        case _ ⇒
+        case _ =>
           (rl, Map.empty)
       }
     }
@@ -642,7 +644,7 @@ private [binders] trait BindersMacroImpl extends MacroAdapter[Context] {
         case (_, TypeRef(dstTpe, dstSym, dstTypeArgs)) =>
           compareGenericNoPrefix(dstTpe, dstSym, src, typeParams, 20)
 
-        case other ⇒
+        case other =>
           (0, Map.empty)
       }
     } else {

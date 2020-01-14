@@ -22,7 +22,7 @@ class TestBindOptionSpec extends FlatSpec with Matchers with MockFactory {
   "all Long parameters " should " unbind" in {
     val m = mock[TestDeserializer[PlainConverter.type]]
     inSequence {
-      m.readLong _ expects() returning 123456l
+      (m.readLong _). expects() returning 123456l
     }
 
     val i1 = m.unbind[Long]
@@ -32,8 +32,8 @@ class TestBindOptionSpec extends FlatSpec with Matchers with MockFactory {
   "all Option[Long] parameters " should " unbind" in {
     val m = mock[TestDeserializer[PlainConverter.type]]
     inSequence {
-      m.isNull _ expects () returning false
-      m.readLong _ expects() returning 555l
+      (m.isNull _). expects () returning false
+      (m.readLong _). expects() returning 555l
     }
 
     val i1 = m.unbind[Option[Long]]
@@ -43,7 +43,7 @@ class TestBindOptionSpec extends FlatSpec with Matchers with MockFactory {
   "all None parameters " should " unbind" in {
     val m = mock[TestDeserializer[PlainConverter.type]]
 
-    m.isNull _ expects () returning true
+    (m.isNull _). expects () returning true
 
     val i1 = m.unbind[Option[Long]]
     i1 shouldBe None

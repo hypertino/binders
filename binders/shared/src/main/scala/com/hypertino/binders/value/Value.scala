@@ -43,7 +43,7 @@ sealed trait Value extends Any {
       start + toString + end
     }
   }
-  def getOrElse(default: ⇒ Value): Value = {
+  def getOrElse(default: => Value): Value = {
     if (isNull) default else this
   }
   def +(other: Value): Value = throw new UnsupportedOperationException(s"$this + $other")
@@ -87,16 +87,16 @@ case object Null extends Value {
   override def ~~[T](visitor: ValueVisitor[T]): T = visitor.visitNull()
 
   override def +(other: Value): Value = other match {
-    case obj: Obj ⇒ obj
-    case _ ⇒ Null
+    case obj: Obj => obj
+    case _ => Null
   }
   override def %(other: Value): Value = other match {
-    case obj: Obj ⇒ obj
-    case _ ⇒ Null
+    case obj: Obj => obj
+    case _ => Null
   }
   override def ++(other: Value): Value = other match {
-    case lst: Lst ⇒ lst
-    case _ ⇒ Null
+    case lst: Lst => lst
+    case _ => Null
   }
   override def --(other: Value): Value = Null
   override def -(other: Value): Value = Null
@@ -141,17 +141,17 @@ case class Number(v: BigDecimal) extends AnyVal with Value {
     Null
 
   override def |(other: Value): Value = if (other != Null)
-    BigDecimal(v.toBigInt() | other.toBigDecimal.toBigInt())
+    BigDecimal(v.toBigInt | other.toBigDecimal.toBigInt)
   else
     Null
 
   override def &(other: Value): Value = if (other != Null)
-    BigDecimal(v.toBigInt() & other.toBigDecimal.toBigInt())
+    BigDecimal(v.toBigInt & other.toBigDecimal.toBigInt)
   else
     Null
 
   override def ^(other: Value): Value = if (other != Null)
-    BigDecimal(v.toBigInt() ^ other.toBigDecimal.toBigInt())
+    BigDecimal(v.toBigInt ^ other.toBigDecimal.toBigInt)
   else
     Null
 
@@ -175,7 +175,7 @@ case class Number(v: BigDecimal) extends AnyVal with Value {
   else
     false
 
-  override def unary_! : Value = BigDecimal(~v.toBigInt())
+  override def unary_! : Value = BigDecimal(~v.toBigInt)
   override def unary_- : Value = -v
 }
 
@@ -194,48 +194,48 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
 
   override def %(other: Value): Obj = {
     other match {
-      case o: Obj ⇒
+      case o: Obj =>
         this.%(o.v.toSeq)
-      case Null ⇒
+      case Null =>
         Obj.empty
-      case _ ⇒
+      case _ =>
         throw new UnsupportedOperationException(s"$this + $other")
     }
   }
 
   override def +(other: Value): Obj = {
     other match {
-      case o: Obj ⇒
+      case o: Obj =>
         this.+(o.v.toSeq)
-      case Null ⇒
+      case Null =>
         this
-      case _ ⇒
+      case _ =>
         throw new UnsupportedOperationException(s"$this + $other")
     }
   }
 
   override def -(other: Value): Obj = {
     other match {
-      case o: Obj ⇒
+      case o: Obj =>
         this.-(o.v.toSeq)
-      case Null ⇒
+      case Null =>
         this
-      case Lst(lst) ⇒ {
+      case Lst(lst) => {
         val set = lst.toSet
-        Obj(v.filterNot(el ⇒ set.contains(el._1)))
+        Obj(v.filterNot(el => set.contains(el._1)))
       }
-      case _ ⇒
+      case _ =>
         Obj(v.filterNot(_._1 == other.toString))
     }
   }
 
   def % (other: Seq[(String,Value)]): Obj = {
     Obj(v ++ other.map {
-      case (k, Null) ⇒ k → Null
+      case (k, Null) => k → Null
       case (k, otherV) => k -> v.get(k).map {
-        case originalV : Obj ⇒
+        case originalV : Obj =>
           originalV.%(otherV)
-        case _ ⇒
+        case _ =>
           otherV
       }.getOrElse {
         otherV
@@ -245,7 +245,7 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
 
   def + (other: Seq[(String,Value)]): Obj = {
     Obj(v ++ other.map {
-      case (k, otherV) => k -> v.get(k).map { originalV ⇒
+      case (k, otherV) => k -> v.get(k).map { originalV =>
         originalV.+(otherV)
       }.getOrElse {
         otherV
@@ -255,20 +255,20 @@ case class Obj(v: scala.collection.Map[String, Value]) extends AnyVal with Value
 
   def - (other: Seq[(String,Value)]): Obj = {
     Obj(v ++ other.flatMap {
-      case (k, otherV) => v.get(k).flatMap { originalV ⇒
+      case (k, otherV) => v.get(k).flatMap { originalV =>
         (originalV, otherV) match {
-          case (_: Obj, _: Obj | _: Lst) ⇒ Some(k -> originalV.-(otherV))
-          case (_, Null) ⇒ Some(k -> originalV)
-          case (_: Lst, _) ⇒ Some(k -> originalV.-(otherV))
-          case (_: Obj, _: Bool | _: Number | _: Text) ⇒ Some(k → originalV.-(otherV))
-          case _ ⇒ None
+          case (_: Obj, _: Obj | _: Lst) => Some(k -> originalV.-(otherV))
+          case (_, Null) => Some(k -> originalV)
+          case (_: Lst, _) => Some(k -> originalV.-(otherV))
+          case (_: Obj, _: Bool | _: Number | _: Text) => Some(k → originalV.-(otherV))
+          case _ => None
         }
       }
     } -- other.flatMap {
-      case (k, otherV) => v.get(k).flatMap { originalV ⇒
+      case (k, otherV) => v.get(k).flatMap { originalV =>
         (originalV, otherV) match {
-          case (_: Bool | _: Number | _: Text, _) ⇒ Some(k)
-          case _ ⇒ None
+          case (_: Bool | _: Number | _: Text, _) => Some(k)
+          case _ => None
         }
       }
     })
@@ -315,15 +315,15 @@ object Obj {
   def extractValue(o: Obj, path: Seq[String]): Value = {
     if (path.tail.isEmpty) {
       o.v.get(path.head) match {
-        case Some(v) ⇒ v
-        case None ⇒ Null
+        case Some(v) => v
+        case None => Null
       }
     }
     else {
       o.v.get(path.head) match {
-        case Some(child: Obj) ⇒
+        case Some(child: Obj) =>
           extractValue(child, path.tail)
-        case _ ⇒
+        case _ =>
           Null
       }
     }
@@ -331,13 +331,13 @@ object Obj {
 
   def splitPath(other: Value): Seq[String] = {
     other match {
-      case Text(path) ⇒
+      case Text(path) =>
         path.split('.')
 
-      case Lst(elements) ⇒
+      case Lst(elements) =>
         elements.map(_.toString)
 
-      case _ ⇒
+      case _ =>
         throw new UnsupportedOperationException(s"Obj.splitPath($other)")
     }
   }
@@ -345,15 +345,15 @@ object Obj {
   def hasPath(o: Obj, path: Seq[String]): Boolean = {
     if (path.tail.isEmpty) {
       o.v.get(path.head) match {
-        case Some(v) ⇒ true
-        case None ⇒ false
+        case Some(v) => true
+        case None => false
       }
     }
     else {
       o.v.get(path.head) match {
-        case Some(child: Obj) ⇒
+        case Some(child: Obj) =>
           hasPath(child, path.tail)
-        case _ ⇒
+        case _ =>
           false
       }
     }
@@ -370,17 +370,17 @@ case class Lst(v: Seq[Value]) extends AnyVal with Value{
 
   override def ++(other: Value): Lst = {
     other match {
-      case Lst(seqOther) ⇒ v ++ seqOther
-      case Null ⇒ this
-      case _ ⇒ throw new UnsupportedOperationException(s"$this ++ $other")
+      case Lst(seqOther) => v ++ seqOther
+      case Null => this
+      case _ => throw new UnsupportedOperationException(s"$this ++ $other")
     }
   }
 
   override def --(other: Value): Lst = {
     other match {
-      case Lst(seqOther) ⇒ v diff seqOther
-      case Null ⇒ this
-      case _ ⇒ throw new UnsupportedOperationException(s"$this ++ $other")
+      case Lst(seqOther) => v diff seqOther
+      case Null => this
+      case _ => throw new UnsupportedOperationException(s"$this ++ $other")
     }
   }
 
@@ -430,10 +430,10 @@ trait Bool extends Value with Product {
   // product methods
   def copy(o: Boolean): Bool
   override def equals(obj: scala.Any): Boolean = obj match {
-    case null ⇒ false
-    case Bool(o) ⇒ v == o
-    case b: Boolean ⇒ v == b
-    case _ ⇒ false
+    case null => false
+    case Bool(o) => v == o
+    case b: Boolean => v == b
+    case _ => false
   }
   override def hashCode(): Int = if(v) 1 else 0
   override def productArity: Int = 1
@@ -536,8 +536,8 @@ private [value] object Visitors {
     override def visitNull(): Value = Null
     override def visitBool(d: Bool): Value = d
     override def visitObj(d: Obj): Value = Obj(d.v.flatMap {
-      case (k, Null) ⇒ None
-      case (k, other) ⇒ Some(k → removeNullFields(other))
+      case (k, Null) => None
+      case (k, other) => Some(k → removeNullFields(other))
     })
     override def visitText(d: Text): Value = d
     override def visitLst(d: Lst): Value = d

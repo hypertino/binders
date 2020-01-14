@@ -4,12 +4,12 @@ import com.hypertino.binders.core.Deserializer
 import com.hypertino.inflector.naming.{Converter, PlainConverter}
 
 trait ValueSerializerFactory[C <: Converter, S <: ValueSerializerBase[C,_], D <: Deserializer[C]] {
-  def withDeserializer[T](value: Value)(codeBlock: D ⇒ T): T = {
+  def withDeserializer[T](value: Value)(codeBlock: D => T): T = {
     val deserializer = createDeserializer(value)
     codeBlock(deserializer)
   }
 
-  def withSerializer(codeBlock: S ⇒ Unit): Value = {
+  def withSerializer(codeBlock: S => Unit): Value = {
     val serializer = createSerializer()
     codeBlock(serializer)
     serializer.result

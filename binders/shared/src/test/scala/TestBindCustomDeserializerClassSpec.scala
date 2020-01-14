@@ -23,7 +23,7 @@ class TestBindCustomDeserializerClassSpec extends FlatSpec with Matchers with Mo
 
   "Custom " should " unbind" in {
     val m = mock[TestCustomDeserializer[PlainConverter.type]]
-    m.readCustom _ expects() returning new Custom(123456)
+    (m.readCustom _).expects().returning(new Custom(123456))
     val i1 = m.unbind[CustomBase]
     i1 shouldBe a[Custom]
   }

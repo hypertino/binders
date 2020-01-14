@@ -80,7 +80,7 @@ abstract class ValueSerializerBase[C <: Converter, F <: ValueSerializerBaseTrait
   }
 
   def endArray(): Unit = {
-    val s = Lst(seq)
+    val s = Lst(seq.toSeq)
     if (isStackEmpty) {
       value = s
       seq = null

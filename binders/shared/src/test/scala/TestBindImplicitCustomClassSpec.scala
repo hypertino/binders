@@ -24,7 +24,7 @@ class TestBindImplicitCustomClassSpec extends FlatSpec with Matchers with MockFa
     val i1 = new Custom(123456)
     implicit val customSerializer = new ImplicitCustomSerializer
 
-    m.writeInt _ expects 123456
+    (m.writeInt _). expects (123456)
     m.bind(i1)
   }
 
@@ -32,14 +32,14 @@ class TestBindImplicitCustomClassSpec extends FlatSpec with Matchers with MockFa
     val m = mock[TestSerializer[PlainConverter.type]]
     val i1 = new Custom(123456)
     implicit val customSerializer = new ImplicitCustomSerializer
-    m.writeInt _ expects 123456
+    (m.writeInt _). expects (123456)
     m.bindArgs(i1)
   }
 
   "Custom " should " unbind" in {
     val m = mock[TestDeserializer[PlainConverter.type]]
     implicit val customDeserializer = new ImplicitCustomDeserializer
-    m.readInt _ expects() returning 123456
+    (m.readInt _). expects() returning 123456
     val i1 = m.unbind[Custom]
     i1.intValue shouldBe 123456
   }

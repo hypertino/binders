@@ -1,26 +1,29 @@
-crossScalaVersions := Seq("2.12.4", "2.11.12")
+import sbtcrossproject.CrossPlugin.autoImport.{crossProject, CrossType}
 
-scalaVersion in Global := crossScalaVersions.value.head
+lazy val scala213 = "2.13.1"
+lazy val scala212 = "2.12.10"
+lazy val scala211 = "2.11.12"
+lazy val supportedScalaVersions = List(scala213, scala212, scala211)
 
-organization in Global := "com.hypertino"
+ThisBuild / scalaVersion := scala213
 
-scalacOptions in Global ++= Seq("-feature", "-deprecation")
+ThisBuild / organization := "com.hypertino"
 
-lazy val binders = crossProject.settings(publishSettings:_*).settings(
+ThisBuild / scalacOptions ++= Seq("-feature", "-deprecation")
+
+lazy val binders = crossProject(JSPlatform, JVMPlatform)
+  .crossType(CrossType.Full)
+  .settings(publishSettings:_*)
+  .settings(
+    crossScalaVersions := supportedScalaVersions,
     name := "binders",
     version := "1.2-SNAPSHOT",
     libraryDependencies ++= Seq(
-      "com.hypertino" %%% "inflector" % "1.0.9",
-      "org.scalamock" %%% "scalamock-scalatest-support" % "3.5.0" % "test",
+      "com.hypertino" %%% "inflector" % "1.0.13",
+      "org.scalamock" %%% "scalamock" % "4.4.0" % Test,
+      "org.scalatest" %% "scalatest" % "3.1.0" % Test,
       "org.scala-lang" % "scala-reflect" % scalaVersion.value
-    ) ++ {
-      CrossVersion.partialVersion(scalaVersion.value) match {
-        case Some((2, 10)) =>
-          Seq(compilerPlugin("org.scalamacros" % "paradise" % "2.1.0" cross CrossVersion.full),
-            "org.scalamacros" %% "quasiquotes" % "2.1.0" cross CrossVersion.binary)
-        case _ ⇒ Seq.empty
-      }
-    },
+    ),
     publishArtifact := true,
     publishArtifact in Test := false,
     resolvers ++= Seq(
@@ -36,13 +39,12 @@ lazy val js = binders.js
 
 lazy val jvm = binders.jvm
 
-lazy val `binders-root` = project.settings(publishSettings:_*).in(file(".")).
-  aggregate(js, jvm).
-  settings(
-    publish := {},
-    publishLocal := {},
-    publishArtifact in Test := false,
-    publishArtifact := false
+lazy val `binders-root` = project.settings(publishSettings:_*).in(file("."))
+  .settings(publishSettings:_*)
+  .aggregate(js, jvm)
+  .settings(
+    crossScalaVersions := Nil,
+    publish / skip := true
   )
 
 val publishSettings = Seq(
@@ -82,10 +84,10 @@ val publishSettings = Seq(
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  }
+  },
+  credentials ++= (for {
+    username <- Option(System.getenv().get("sonatype_username"))
+    password <- Option(System.getenv().get("sonatype_password"))
+  } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq
 )
 
-credentials ++= (for {
-  username <- Option(System.getenv().get("sonatype_username"))
-  password <- Option(System.getenv().get("sonatype_password"))
-} yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq

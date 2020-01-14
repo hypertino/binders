@@ -12,7 +12,7 @@ trait MacroAdapter[C <: MacroAdapter.Context] {
     def treeTpe = a.tree.tpe
   }
 
-  protected def collectionsFactory(elType:Tree, ct:Type): Tree = q"implicitly[scala.collection.generic.CanBuildFrom[_,$elType,$ct]].apply()"
+  protected def collectionsFactory(elType:Tree, ct:Type): Tree = q"implicitly[scala.collection.Factory[$elType,$ct]].newBuilder"
 }
 
 object MacroAdapter {

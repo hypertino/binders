@@ -50,16 +50,16 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m3 = mock[TestSerializer[PlainConverter.type]]
 
     inSequence {
-      m.beginObject _ expects()
-      m.getFieldSerializer _ expects "intValue1" returning Some(m1)
-      m1.writeInt _ expects 123456
+      (m.beginObject _).expects()
+      (m.getFieldSerializer _). expects ("intValue1") . returning (Some(m1))
+      (m1.writeInt _). expects (123456)
 
-      m.getFieldSerializer _ expects "nullableValue" returning Some(m2)
-      m2.writeIntNullable _ expects Some(555)
+      (m.getFieldSerializer _). expects ("nullableValue"). returning (Some(m2))
+      (m2.writeIntNullable _). expects (Some(555))
 
-      m.getFieldSerializer _ expects "intValue2" returning Some(m3)
-      m3.writeInt _ expects 7890
-      m.endObject _ expects()
+      (m.getFieldSerializer _). expects( "intValue2" ).returning( Some(m3))
+      (m3.writeInt _). expects (7890)
+      (m.endObject _).expects()
     }
 
     m.bind(TestProduct(123456, Some(555), 7890))
@@ -72,14 +72,14 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m3 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
 
     inSequence {
-      m.beginObject _ expects()
-      m.getFieldSerializer _ expects "int_value1" returning Some(m1)
-      m1.writeInt _ expects 123456
-      m.getFieldSerializer _ expects "nullable_value" returning Some(m2)
-      m2.writeIntNullable _ expects Some(555)
-      m.getFieldSerializer _ expects "int_value2" returning Some(m3)
-      m3.writeInt _ expects 7890
-      m.endObject _ expects()
+      (m.beginObject _).expects()
+      (m.getFieldSerializer _). expects( "int_value1" ).returning( Some(m1))
+      (m1.writeInt _). expects (123456)
+      (m.getFieldSerializer _). expects( "nullable_value" ).returning( Some(m2))
+      (m2.writeIntNullable _). expects (Some(555))
+      (m.getFieldSerializer _). expects( "int_value2" ).returning( Some(m3))
+      (m3.writeInt _). expects (7890)
+      (m.endObject _).expects()
     }
 
     m.bind(TestProduct(123456, Some(555), 7890))
@@ -90,13 +90,13 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m1 = mock[TestSerializer[PlainConverter.type]]
 
     inSequence {
-      m.beginObject _ expects()
-      m.getFieldSerializer _ expects "intValue1" returning Some(m1)
-      m1.writeInt _ expects 123456
+      (m.beginObject _).expects()
+      (m.getFieldSerializer _). expects( "intValue1" ).returning( Some(m1))
+      (m1.writeInt _). expects (123456)
 
-      m.getFieldSerializer _ expects "nullableValue" returning None
-      m.getFieldSerializer _ expects "intValue2" returning None
-      m.endObject _ expects()
+      (m.getFieldSerializer _). expects( "nullableValue" ).returning( None)
+      (m.getFieldSerializer _). expects( "intValue2" ).returning( None)
+      (m.endObject _).expects()
     }
 
     m.bindPartial(TestProduct(123456, Some(555), 7890))
@@ -109,12 +109,12 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m3 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
 
     inSequence {
-      m.beginObject _ expects()
-      m.getFieldSerializer _ expects "int_value1" returning Some(m1)
-      m1.writeInt _ expects 888666777
-      m.getFieldSerializer _ expects "int_value2" returning Some(m3)
-      m3.writeInt _ expects 7890
-      m.endObject _ expects ()
+      (m.beginObject _).expects()
+      (m.getFieldSerializer _). expects( "int_value1" ).returning( Some(m1))
+      (m1.writeInt _). expects (888666777)
+      (m.getFieldSerializer _). expects( "int_value2" ).returning( Some(m3))
+      (m3.writeInt _). expects (7890)
+      (m.endObject _).expects ()
     }
 
     //m.getFieldSerializer _ expects "nullable_value" returning None
@@ -130,14 +130,14 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m3 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
 
     inSequence {
-      m.beginObject _ expects()
-      m.getFieldSerializer _ expects "int_value1" returning Some(m1)
-      m1.writeInt _ expects 888666777
-      m.getFieldSerializer _ expects "nullable_value" returning Some(m2)
-      m2.writeIntNullable _ expects None
-      m.getFieldSerializer _ expects "int_value2" returning Some(m3)
-      m3.writeInt _ expects 7890
-      m.endObject _ expects()
+      (m.beginObject _).expects()
+      (m.getFieldSerializer _). expects( "int_value1" ).returning( Some(m1))
+      (m1.writeInt _). expects (888666777)
+      (m.getFieldSerializer _). expects( "nullable_value" ).returning( Some(m2))
+      (m2.writeIntNullable _). expects (None)
+      (m.getFieldSerializer _). expects( "int_value2" ).returning( Some(m3))
+      (m3.writeInt _). expects (7890)
+      (m.endObject _). expects()
     }
 
     m.bind(TestProduct(888666777, None, 7890))
@@ -150,17 +150,17 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m3 = mock[TestDeserializer[PlainConverter.type]]
 
 
-    m1.fieldName _ expects () returning Some("intValue1")
-    m1.readInt _ expects () returning 123456
+    (m1.fieldName _). expects () returning Some("intValue1")
+    (m1.readInt _). expects () returning 123456
 
-    m2.fieldName _ expects () returning Some("nullableValue")
-    m2.readIntNullable _ expects () returning Some(555)
+    (m2.fieldName _). expects () returning Some("nullableValue")
+    (m2.readIntNullable _). expects () returning Some(555)
 
-    m3.fieldName _ expects () returning Some("intValue2")
-    m3.readInt _ expects () returning 7890
+    (m3.fieldName _). expects () returning Some("intValue2")
+    (m3.readInt _). expects () returning 7890
 
     val mi = List(m1,m2,m3)
-    m.iterator _ expects () returning mi.toIterator
+    (m.iterator _). expects (). returning (mi.toIterator)
 
     val t = m.unbind[TestProduct]
     t shouldBe TestProduct(123456, Some(555), 7890)
@@ -170,19 +170,19 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m = mock[TestDeserializer[CamelCaseToSnakeCaseConverter.type]]
 
     val m1 = mock[TestDeserializer[CamelCaseToSnakeCaseConverter.type]]
-    m1.fieldName _ expects () returning Some("int_value1")
-    m1.readInt _ expects () returning 123456
+    (m1.fieldName _). expects () returning Some("int_value1")
+    (m1.readInt _). expects () returning 123456
 
     val m2 = mock[TestDeserializer[CamelCaseToSnakeCaseConverter.type]]
-    m2.fieldName _ expects () returning Some("nullable_value")
-    m2.readIntNullable _ expects () returning Some(555)
+    (m2.fieldName _). expects () returning Some("nullable_value")
+    (m2.readIntNullable _). expects () returning Some(555)
 
     val m3 = mock[TestDeserializer[CamelCaseToSnakeCaseConverter.type]]
-    m3.fieldName _ expects () returning Some("int_value2")
-    m3.readInt _ expects () returning 7890
+    (m3.fieldName _). expects () returning Some("int_value2")
+    (m3.readInt _). expects () returning 7890
 
     val mi = List(m1,m2,m3)
-    m.iterator _ expects () returning mi.toIterator
+    (m.iterator _). expects () returning mi.toIterator
 
     val t = m.unbind[TestProduct]
     t shouldBe TestProduct(123456, Some(555), 7890)
@@ -192,15 +192,15 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m = mock[TestDeserializer[PlainConverter.type]]
 
     val m1 = mock[TestDeserializer[PlainConverter.type]]
-    m1.fieldName _ expects () returning Some("intValue1")
-    m1.readInt _ expects () returning 123456
+    (m1.fieldName _). expects () returning Some("intValue1")
+    (m1.readInt _). expects () returning 123456
 
     val m3 = mock[TestDeserializer[PlainConverter.type]]
-    m3.fieldName _ expects () returning Some("intValue2")
-    m3.readInt _ expects () returning 7890
+    (m3.fieldName _). expects () returning Some("intValue2")
+    (m3.readInt _). expects () returning 7890
 
     val mi = List(m1,m3)
-    m.iterator _ expects () returning mi.toIterator
+    (m.iterator _). expects () returning mi.toIterator
 
     val t = m.unbindPartial(TestProduct(-1, Some(555), -2))
     t shouldBe TestProduct(123456, Some(555), 7890)
@@ -208,35 +208,35 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
 
   "all inner case class fields " should " be deserialized by names " in {
     val m1 = mock[TestDeserializer[PlainConverter.type]]
-    m1.fieldName _ expects () returning Some("intValue1") twice()
-    m1.readInt _ expects () returning 123456 twice()
+    (m1.fieldName _). expects (). returning (Some("intValue1")). twice()
+    (m1.readInt _). expects (). returning (123456). twice()
 
     val m2 = mock[TestDeserializer[PlainConverter.type]]
-    m2.fieldName _ expects () returning Some("nullableValue") twice()
-    m2.readIntNullable _ expects () returning Some(555) twice()
+    (m2.fieldName _). expects (). returning (Some("nullableValue")). twice()
+    (m2.readIntNullable _). expects (). returning (Some(555)). twice()
 
     val m3 = mock[TestDeserializer[PlainConverter.type]]
-    m3.fieldName _ expects () returning Some("intValue2") twice()
-    m3.readInt _ expects () returning 7890 twice()
+    (m3.fieldName _). expects (). returning (Some("intValue2")). twice()
+    (m3.readInt _). expects (). returning (7890). twice()
 
     val mi = List(m1,m2,m3)
 
     val mf1 = mock[TestDeserializer[PlainConverter.type]]
-    mf1.fieldName _ expects () returning Some("inner")
-    mf1.iterator _ expects () returning mi.toIterator
+    (mf1.fieldName _). expects (). returning (Some("inner"))
+    (mf1.iterator _). expects (). returning (mi.toIterator)
 
     val mn = mock[TestDeserializer[PlainConverter.type]]
-    mn.fieldName _ expects () returning Some("nullableInner")
-    mn.isNull _ expects () returning true
+    (mn.fieldName _). expects (). returning (Some("nullableInner"))
+    (mn.isNull _). expects (). returning (true)
 
     val mf2 = mock[TestDeserializer[PlainConverter.type]]
-    mf2.fieldName _ expects () returning Some("nullableInner1")
-    mf2.isNull _ expects () returning false
-    mf2.iterator _ expects () returning mi.toIterator
+    (mf2.fieldName _). expects (). returning (Some("nullableInner1"))
+    (mf2.isNull _). expects (). returning (false)
+    (mf2.iterator _). expects (). returning (mi.toIterator)
 
     val mo = mock[TestDeserializer[PlainConverter.type]]
     val moi = List(mf1,mn,mf2)
-    mo.iterator _ expects () returning moi.toIterator
+    (mo.iterator _). expects (). returning (moi.toIterator)
 
     val t = mo.unbind[TestInnerProduct]
     t shouldBe TestInnerProduct(
@@ -252,12 +252,12 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m2 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
 
     inSequence {
-      m.beginObject _ expects()
-      m.getFieldSerializer _ expects "f1Value" returning Some(m1)
-      m1.writeInt _ expects 576
-      m.getFieldSerializer _ expects "f2_value" returning Some(m2)
-      m2.writeInt _ expects 90
-      m.endObject _ expects ()
+      (m.beginObject _).expects()
+      (m.getFieldSerializer _). expects( "f1Value" ).returning( Some(m1))
+      (m1.writeInt _). expects (576)
+      (m.getFieldSerializer _). expects( "f2_value" ).returning( Some(m2))
+      (m2.writeInt _). expects (90)
+      (m.endObject _).expects ()
     }
     m.bind(TestProductAnnotated(576, 90))
   }
@@ -268,12 +268,12 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m2 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
 
     inSequence {
-      m.beginObject _ expects()
-      m.getFieldSerializer _ expects "f1Value" returning Some(m1)
-      m1.writeInt _ expects 576
-      m.getFieldSerializer _ expects "f2_value" returning Some(m2)
-      m2.writeString _ expects "90"
-      m.endObject _ expects ()
+      (m.beginObject _).expects()
+      (m.getFieldSerializer _). expects( "f1Value" ).returning( Some(m1))
+      (m1.writeInt _). expects (576)
+      (m.getFieldSerializer _). expects( "f2_value" ).returning( Some(m2))
+      (m2.writeString _). expects ("90")
+      (m.endObject _).expects ()
     }
     m.bind(TestTraitAnnotated(576, "90"))
   }
@@ -284,14 +284,14 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m2 = mock[TestSerializer[PlainConverter.type]]
 
     inSequence {
-      m.beginObject _ expects()
-      m.getFieldSerializer _ expects "intValue" returning Some(m1)
-      m1.writeInt _ expects 123456
+      (m.beginObject _).expects()
+      (m.getFieldSerializer _). expects( "intValue" ).returning( Some(m1))
+      (m1.writeInt _). expects (123456)
 
-      m.getFieldSerializer _ expects "stringValue" returning Some (m2)
-      m2.writeString _ expects "abc"
+      (m.getFieldSerializer _). expects( "stringValue" ).returning( Some (m2))
+      (m2.writeString _). expects ("abc")
 
-      m.endObject _ expects()
+      (m.endObject _). expects()
     }
 
     m.bind(TestTrait(123456, "abc"))
@@ -301,15 +301,15 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m = mock[TestDeserializer[PlainConverter.type]]
 
     val m1 = mock[TestDeserializer[PlainConverter.type]]
-    m1.fieldName _ expects () returning Some("intValue")
-    m1.readInt _ expects () returning 123456
+    (m1.fieldName _). expects () returning Some("intValue")
+    (m1.readInt _). expects () returning 123456
 
     val m2 = mock[TestDeserializer[PlainConverter.type]]
-    m2.fieldName _ expects () returning Some("stringValue")
-    m2.readString _ expects () returning "abc"
+    (m2.fieldName _). expects () returning Some("stringValue")
+    (m2.readString _). expects () returning "abc"
 
     val mi = List(m1,m2)
-    m.iterator _ expects () returning mi.toIterator
+    (m.iterator _). expects () returning mi.toIterator
 
     val t = m.unbind[TestTrait]
     t.intValue shouldBe 123456
@@ -323,12 +323,12 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m2 = mock[TestSerializer[CamelCaseToSnakeCaseConverter.type]]
 
     inSequence {
-      m.beginObject _ expects()
-      m.getFieldSerializer _ expects "f1Value" returning Some(m1)
-      m1.writeInt _ expects 576
-      m.getFieldSerializer _ expects "f2_value" returning Some(m2)
-      m2.writeString _ expects "90"
-      m.endObject _ expects ()
+      (m.beginObject _).expects()
+      (m.getFieldSerializer _). expects( "f1Value" ).returning( Some(m1))
+      (m1.writeInt _). expects (576)
+      (m.getFieldSerializer _). expects( "f2_value" ).returning( Some(m2))
+      (m2.writeString _). expects ("90")
+      (m.endObject _).expects ()
     }
     m.bindPartial(TestTraitAnnotated(576, "90"))
   }
@@ -339,14 +339,14 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m2 = mock[TestSerializer[PlainConverter.type]]
 
     inSequence {
-      m.beginObject _ expects()
-      m.getFieldSerializer _ expects "intValue" returning Some(m1)
-      m1.writeInt _ expects 123456
+      (m.beginObject _).expects()
+      (m.getFieldSerializer _). expects( "intValue" ).returning( Some(m1))
+      (m1.writeInt _). expects (123456)
 
-      m.getFieldSerializer _ expects "stringValue" returning Some (m2)
-      m2.writeString _ expects "abc"
+      (m.getFieldSerializer _). expects( "stringValue" ).returning( Some (m2))
+      (m2.writeString _). expects ("abc")
 
-      m.endObject _ expects()
+      (m.endObject _). expects()
     }
 
     m.bindPartial(TestTrait(123456, "abc"))
@@ -356,12 +356,12 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
     val m = mock[TestSerializer[PlainConverter.type]]
     val m1 = mock[TestSerializer[PlainConverter.type]]
     inSequence {
-      m.beginObject _ expects()
+      (m.beginObject _).expects()
       for (i <- 1 to 23) {
-        m.getFieldSerializer _ expects s"a$i" returning Some(m1)
-        m1.writeInt _ expects i
+        (m.getFieldSerializer _). expects( s"a$i" ).returning( Some(m1))
+        (m1.writeInt _). expects (i)
       }
-      m.endObject _ expects()
+      (m.endObject _). expects()
     }
     m.bind(MoreThan22Fields(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23))
   }
@@ -381,10 +381,10 @@ class TestProductSpec extends FlatSpec with Matchers with MockFactory {
 //
 //    inSequence {
 //      m.beginObject _ expects()
-//      m.getFieldSerializer _ expects "intValue" returning Some(m1)
-//      m1.writeInt _ expects 123456
+//      m.getFieldSerializer _ expects( "intValue" ).returning( Some(m1))
+//      m1.writeInt _ expects( 123456
 //
-//      m.getFieldSerializer _ expects "stringValue" returning Some (m2)
+//      m.getFieldSerializer _ expects "stringValue" ).returning( Some (m2))
 //      m2.writeString _ expects "abc"
 //
 //      m.endObject _ expects()

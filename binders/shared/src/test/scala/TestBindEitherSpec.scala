@@ -12,9 +12,9 @@ class TestBindEitherSpec extends FlatSpec with Matchers with MockFactory {
     val i3: Either[Long,Option[String]] = Right(None)
 
     inSequence {
-      m.writeLong _ expects 1
-      m.writeString _ expects "ha"
-      m.writeStringNullable _ expects None
+      (m.writeLong _). expects (1)
+      (m.writeString _). expects ("ha")
+      (m.writeStringNullable _). expects (None)
     }
 
     m.bind(i1)
@@ -26,19 +26,19 @@ class TestBindEitherSpec extends FlatSpec with Matchers with MockFactory {
     import com.hypertino.binders.value._
     val m = mock[TestDeserializer[PlainConverter.type]]
 
-    m.readValue _ expects() returning Number(123456l)
+    (m.readValue _).expects() returning Number(123456l)
     val i1 = m.unbind[Either[Long,String]]
     i1 shouldBe Left(123456)
 
-    m.readValue _ expects() returning Text("ha")
+    (m.readValue _).expects() returning Text("ha")
     val i2 = m.unbind[Either[Long,String]]
     i2 shouldBe Right("ha")
 
-    m.readValue _ expects() returning Text("0")
+    (m.readValue _).expects() returning Text("0")
     val i3 = m.unbind[Either[Long,Option[String]]]
     i3 shouldBe Right(Some("0"))
 
-    m.readValue _ expects() returning Lst(Seq(1,2,3).map(_.toValue))
+    (m.readValue _).expects() returning Lst(Seq(1,2,3).map(_.toValue))
     val i4 = m.unbind[Either[TestClass1,Seq[Int]]]
     i4 shouldBe Right(Seq(1,2,3))
   }
@@ -47,7 +47,7 @@ class TestBindEitherSpec extends FlatSpec with Matchers with MockFactory {
     import com.hypertino.binders.value._
     val m = mock[TestDeserializer[PlainConverter.type]]
 
-    m.readValue _ expects() returning Number(123456l)
+    (m.readValue _).expects() returning Number(123456l)
     val i4 = m.unbind[Either[Int,Long]]
     i4 shouldBe Right(123456l)
   }

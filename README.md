@@ -70,7 +70,7 @@ class MyDeserializer[C <: Converter](val fieldName: Option[String] = None) exten
   def readString(): String = "hello"
   def isNull: Boolean = false
 
-  def iterator(): Iterator[MyDeserializer[C]] = Seq("x","y","z").map(s ⇒ new MyDeserializer[C](Some(s))).toIterator
+  def iterator(): Iterator[MyDeserializer[C]] = Seq("x","y","z").map(s => new MyDeserializer[C](Some(s))).toIterator
 }
 ```
 

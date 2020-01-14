@@ -1,15 +1,16 @@
 language: scala
 
 scala:
-  - 2.12.4
-  - 2.11.12
+  - "2.13.1"
+  - "2.12.10"
+  - "2.11.12"
 
 sudo: false
 
 script: $TRAVIS_BUILD_DIR/travis/script/build.sh
 
 jdk:
-  - oraclejdk8
+  - oraclejdk13
 
 cache:
   directories:

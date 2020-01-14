@@ -218,10 +218,10 @@ class TestValueSpec extends FlatSpec with Matchers {
     val seq = Seq[(String, Value)]("a" -> 1, "b" -> "ho", "c" -> true, "d" → 5, "e" → "kl")
     val value1 = Obj.from(seq: _*)
 
-    val z = seq.zipWithIndex.map(a ⇒ a._2 → a._1).toMap
+    val z = seq.zipWithIndex.map(a => a._2 → a._1).toMap
 
     value1.v.zipWithIndex.foreach{
-      case (kv, index) ⇒
+      case (kv, index) =>
         z(index) should equal(kv)
     }
   }
@@ -253,17 +253,17 @@ class TestValueSpec extends FlatSpec with Matchers {
   "Value " should "do pattern matching" in {
     val obj = Obj.from("a" → 5, "b" → "18")
     obj match {
-      case Obj(map) ⇒ // fine
+      case Obj(map) => // fine
     }
 
     val lst: Value = Lst.from("a",1,false)
     lst match {
-      case Lst(seq) ⇒ // fine
-      case Bool(_) ⇒ fail
-      case Null ⇒ fail
-      case Number(_) ⇒ fail
-      case Obj(_) ⇒ fail
-      case Text(_) ⇒ fail
+      case Lst(seq) => // fine
+      case Bool(_) => fail
+      case Null => fail
+      case Number(_) => fail
+      case Obj(_) => fail
+      case Text(_) => fail
     }
   }
 

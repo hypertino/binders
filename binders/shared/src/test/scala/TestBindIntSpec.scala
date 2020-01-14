@@ -37,8 +37,8 @@ class TestBindIntSpec extends FlatSpec with Matchers with MockFactory {
     val m = mock[TestDeserializer[PlainConverter.type]]
 
     inSequence {
-      m.readInt _ expects () returning 123456
-      m.readIntNullable _ expects () returning Some(555)
+      (m.readInt _). expects () returning 123456
+      (m.readIntNullable _). expects () returning Some(555)
     }
 
     val i1 = m.unbind[Int]

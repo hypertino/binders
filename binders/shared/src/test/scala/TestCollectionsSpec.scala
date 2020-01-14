@@ -13,11 +13,11 @@ class TestCollectionsSpec extends FlatSpec with Matchers with MockFactory {
       l =>
       {
         val mi = mock[TestDeserializerWithGenerics[PlainConverter.type]]
-        mi.readInt _ expects() returning l
+        (mi.readInt _). expects(). returning (l)
         mi
       }
     }
-    m.iterator _ expects () returning mi.toIterator
+    (m.iterator _). expects (). returning (mi.toIterator)
     m
   }
 
@@ -25,14 +25,14 @@ class TestCollectionsSpec extends FlatSpec with Matchers with MockFactory {
     val m = mock[TestSerializerWithGenerics[PlainConverter.type]]
     val map: Map[Long,String] = Map(1l -> "a", 2l -> "b")
 
-    m.writeMap[Long,String] _ expects Map(1l -> "a", 2l -> "b")
+    (m.writeMap[Long,String] _). expects (Map(1l -> "a", 2l -> "b"))
     m.bind(map)
   }
 
   "CoolMap = Map[Long,String] " should " be bound" in {
     val m = mock[TestSerializerWithGenerics[PlainConverter.type]]
     val map: DefineType2.CoolMap = Map(1l -> "a", 2l -> "b")
-    m.writeMap[Long,String] _ expects Map(1l -> "a", 2l -> "b")
+    (m.writeMap[Long,String] _). expects (Map(1l -> "a", 2l -> "b"))
     m.bind(map)
   }
 
@@ -40,10 +40,10 @@ class TestCollectionsSpec extends FlatSpec with Matchers with MockFactory {
     val m = mock[TestSerializerWithGenerics[PlainConverter.type]]
     val t:Traversable[Int] = Seq(123456, 7890).toTraversable
     inSequence {
-      m.beginArray _ expects ()
-      m.writeInt _ expects 123456
-      m.writeInt _ expects 7890
-      m.endArray _ expects ()
+      (m.beginArray _). expects ()
+      (m.writeInt _). expects (123456)
+      (m.writeInt _). expects (7890)
+      (m.endArray _). expects ()
     }
     m.bind(t)
   }
@@ -52,17 +52,17 @@ class TestCollectionsSpec extends FlatSpec with Matchers with MockFactory {
     val m = mock[TestSerializerWithGenerics[PlainConverter.type]]
     val t = Array(123456, 7890)
     inSequence {
-      m.beginArray _ expects ()
-      m.writeInt _ expects 123456
-      m.writeInt _ expects 7890
-      m.endArray _ expects ()
+      (m.beginArray _). expects ()
+      (m.writeInt _). expects (123456)
+      (m.writeInt _). expects (7890)
+      (m.endArray _). expects ()
     }
     m.bind(t)
   }
 
   ignore should "Seq of integers without explicit type be bound" in {
     val m = mock[TestSerializerWithGenerics[PlainConverter.type]]
-    m.writeSeq _ expects Seq(123456, 7890)
+    (m.writeSeq _). expects (Seq(123456, 7890))
     m.bind(Seq(123456, 7890))
   }
 
@@ -105,7 +105,7 @@ class TestCollectionsSpec extends FlatSpec with Matchers with MockFactory {
   // todo: fix ScalaMock support this: def readList[T: ClassTag](): List[T] = ???
   ignore should "List of integers unbind directly" in {
     val m = mock[TestDeserializerWithList[PlainConverter.type]]
-    m.readList[Int] _ expects() returning List(123456, 7890)
+    (m.readList[Int] _). expects(). returning (List(123456, 7890))
     val l = m.unbind[List[Int]]
     l shouldBe List(123456, 7890)
   }

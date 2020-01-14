@@ -7,7 +7,7 @@ import scala.collection.{TraversableLike, mutable}
 
 class CustomColl[+A] extends Traversable[A] with TraversableLike[A, CustomColl[A]]{
   override protected[this] def newBuilder: mutable.Builder[A, CustomColl[A]] = CustomColl.newBuilder[A]
-  override def foreach[U](f: (A) ⇒ U): Unit = {}
+  override def foreach[U](f: (A) => U): Unit = {}
 }
 
 object CustomColl {
