@@ -80,14 +80,13 @@ val publishSettings = Seq(
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
       Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
-  credentials ++= (for {
-    username <- Option(System.getenv().get("sonatype_username"))
-    password <- Option(System.getenv().get("sonatype_password"))
-  } yield Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", username, password)).toSeq
+  }
 )
 
-pgpSecretRing := file("./travis/script/ht-oss-private.asc")
-pgpPublicRing := file("./travis/script/ht-oss-public.asc")
+Global / pgpSecretRing := file("./travis/script/ht-oss-private.asc")
+Global / pgpPublicRing := file("./travis/script/ht-oss-public.asc")
+Global / pgpPassphrase := Option(System.getenv().get("oss_gpg_passphrase")).map(_.toCharArray)
+Global / credentials ++= Seq(
+    Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", System.getenv().get("sonatype_username"), System.getenv().get("sonatype_password")),
+  )
 usePgpKeyHex("F8CDEF49B0EDEDCC")
-pgpPassphrase := Option(System.getenv().get("oss_gpg_passphrase")).map(_.toCharArray)
