@@ -83,10 +83,8 @@ val publishSettings = Seq(
   }
 )
 
-Global / pgpSecretRing := file("./travis/script/ht-oss-private.asc")
-Global / pgpPublicRing := file("./travis/script/ht-oss-public.asc")
 Global / pgpPassphrase := Option(System.getenv().get("oss_gpg_passphrase")).map(_.toCharArray)
 Global / credentials ++= Seq(
     Credentials("Sonatype Nexus Repository Manager", "oss.sonatype.org", System.getenv().get("sonatype_username"), System.getenv().get("sonatype_password")),
   )
-usePgpKeyHex("F8CDEF49B0EDEDCC")
+usePgpKeyHex("97A4EB3D60277A26D5B5480BA53DC2FF4858319D")
