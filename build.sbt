@@ -17,7 +17,7 @@ lazy val binders = crossProject(JSPlatform, JVMPlatform)
   .settings(
     crossScalaVersions := supportedScalaVersions,
     name := "binders",
-    version := "1.2-SNAPSHOT",
+    version := "1.3.0",
     libraryDependencies ++= Seq(
       "com.hypertino" %%% "inflector" % "1.0.13",
       "org.scalamock" %%% "scalamock" % "4.4.0" % Test,
